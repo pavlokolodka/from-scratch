@@ -1,0 +1,16 @@
+{
+  "name": "from-scratch",
+  "version": "1.0.0",
+  "main": "event-emitter.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": [],
+  "author": "Pavlo Kolodka",
+  "license": "MIT",
+  "description": "",
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "jest": "^29.7.0"
+  }
+}
