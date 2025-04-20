@@ -242,18 +242,54 @@ describe("off/removeListener", () => {
   });
 });
 
-it("should remove all listeners with removeAllListeners", () => {
-  const fn1 = jest.fn();
-  const fn2 = jest.fn();
+describe("removeAllListeners", () => {
+  it("should remove all listeners if event is not specified", () => {
+    const fn1 = jest.fn();
+    const fn2 = jest.fn();
 
-  emitter.on("clear", fn1);
-  emitter.on("clear", fn2);
+    emitter.on("event", fn1);
+    emitter.on("event2", fn2);
 
-  emitter.removeAllListeners("clear");
-  emitter.emit("clear");
+    emitter.removeAllListeners();
+    emitter.emit("event");
+    emitter.emit("event2");
 
-  expect(fn1).not.toHaveBeenCalled();
-  expect(fn2).not.toHaveBeenCalled();
+    expect(fn1).not.toHaveBeenCalled();
+    expect(fn2).not.toHaveBeenCalled();
+  });
+
+  it("should remove all listeners by event", () => {
+    const fn1 = jest.fn();
+    const fn2 = jest.fn();
+    const fn3 = jest.fn();
+
+    emitter.on("event", fn1);
+    emitter.on("event", fn2);
+    emitter.on("event2", fn3);
+
+    emitter.removeAllListeners("event");
+    emitter.emit("event");
+    emitter.emit("event2");
+
+    expect(fn1).not.toHaveBeenCalled();
+    expect(fn2).not.toHaveBeenCalled();
+    expect(fn3).toHaveBeenCalled();
+  });
+
+  it("should not remove a listener if removeAllListeners is called after emit", () => {
+    const fn = jest.fn();
+
+    emitter.on("event", fn);
+    emitter.emit("event");
+
+    emitter.removeAllListeners("event");
+    expect(fn).toHaveBeenCalled();
+
+    fn.mockReset();
+
+    emitter.emit("event");
+    expect(fn).not.toHaveBeenCalled();
+  });
 });
 
 it("should return correct listeners with listeners()", () => {

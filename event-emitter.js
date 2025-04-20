@@ -62,6 +62,16 @@ class MyEventEmitter {
     return this;
   }
 
+  removeAllListeners(event) {
+    if (event === undefined) {
+      this.#eventListeners = new Map();
+    }
+
+    this.#eventListeners.delete(String(event));
+
+    return this;
+  }
+
   #validateListener(cb) {
     if (typeof cb !== "function") {
       throw new Error(`Listener should be a function, received ${cb}`);
