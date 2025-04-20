@@ -292,6 +292,38 @@ describe("removeAllListeners", () => {
   });
 });
 
+describe("listenerCount", () => {
+  it("should return number of listeners for event when there is no listeners attached", () => {
+    const result = emitter.listenerCount("event");
+
+    expect(result).toBe(0);
+  });
+
+  it("should return number of listeners for event", () => {
+    const fn = jest.fn();
+
+    emitter.on("event", fn);
+
+    const result = emitter.listenerCount("event");
+
+    expect(result).toBe(1);
+  });
+
+  it("should return number of listeners for event for a particular listener", () => {
+    const fn = jest.fn();
+    const fn2 = jest.fn();
+
+    emitter.on("event", fn);
+    emitter.on("event", fn2);
+
+    const result = emitter.listenerCount("event");
+    const resultForListener = emitter.listenerCount("event", fn);
+
+    expect(result).toBe(2);
+    expect(resultForListener).toBe(1);
+  });
+});
+
 it("should return correct listeners with listeners()", () => {
   const fn = () => {};
   emitter.on("check", fn);

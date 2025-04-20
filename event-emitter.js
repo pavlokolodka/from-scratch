@@ -42,10 +42,6 @@ class MyEventEmitter {
     return this;
   }
 
-  off(event, listener) {
-    return this.removeListener(event, listener);
-  }
-
   removeListener(event, listener) {
     this.#validateListener(listener);
 
@@ -72,10 +68,36 @@ class MyEventEmitter {
     return this;
   }
 
+  listenerCount(event, listener) {
+    if (listener === undefined) {
+      return (this.#eventListeners.get(String(event)) || []).length;
+    }
+
+    this.#validateListener(listener);
+
+    const listeners = this.#eventListeners.get(String(event));
+
+    if (!listeners) return 0;
+
+    return listeners.filter((l) => l === listener).length;
+  }
+
   #validateListener(cb) {
     if (typeof cb !== "function") {
       throw new Error(`Listener should be a function, received ${cb}`);
     }
+  }
+
+  /**
+   * Aliases
+   */
+
+  off(event, listener) {
+    return this.removeListener(event, listener);
+  }
+
+  addListener(event, listener) {
+    return this.on(event, listener);
   }
 }
 
