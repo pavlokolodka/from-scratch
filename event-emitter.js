@@ -16,10 +16,12 @@ class MyEventEmitter {
 
     if (!listeners) {
       this.#eventListeners.set(String(event), [listener]);
-      return;
+      return this;
     }
 
     this.#eventListeners.set(String(event), [...listeners, listener]);
+
+    return this;
   }
 
   emit(event, ...values) {
@@ -28,6 +30,8 @@ class MyEventEmitter {
     if (!listeners) return;
 
     listeners.forEach((listener) => listener(...values));
+
+    return this;
   }
 
   #validateListener(cb) {

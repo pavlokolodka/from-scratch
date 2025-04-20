@@ -6,27 +6,66 @@ beforeEach(() => {
   emitter = new EventEmitter();
 });
 
-test("should register and call a listener with on", () => {
-  const fn = jest.fn();
-  emitter.on("event", fn);
+describe("on", () => {
+  test("should register and call a listener", () => {
+    const fn = jest.fn();
+    emitter.on("event", fn);
 
-  emitter.emit("event", "arg1", "arg2");
+    emitter.emit("event", "arg1", "arg2");
 
-  expect(fn).toHaveBeenCalledWith("arg1", "arg2");
-  expect(fn).toHaveBeenCalledTimes(1);
+    expect(fn).toHaveBeenCalledWith("arg1", "arg2");
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  test("should register multiple listeners for the same event", () => {
+    const fn1 = jest.fn();
+    const fn2 = jest.fn();
+
+    emitter.on("multi", fn1);
+    emitter.on("multi", fn2);
+
+    emitter.emit("multi", "data");
+
+    expect(fn1).toHaveBeenCalledWith("data");
+    expect(fn2).toHaveBeenCalledWith("data");
+  });
+
+  test("should register multiple listeners for the same event with chaining", () => {
+    const fn1 = jest.fn();
+    const fn2 = jest.fn();
+
+    emitter.on("multi", fn1).on("multi", fn2);
+
+    emitter.emit("multi", "data");
+
+    expect(fn1).toHaveBeenCalledWith("data");
+    expect(fn2).toHaveBeenCalledWith("data");
+  });
 });
 
-test("should register multiple listeners for the same event", () => {
-  const fn1 = jest.fn();
-  const fn2 = jest.fn();
+describe("emit", () => {
+  test("should support chaining", () => {
+    const fn = jest.fn();
 
-  emitter.on("multi", fn1);
-  emitter.on("multi", fn2);
+    emitter.on("event", fn);
 
-  emitter.emit("multi", "data");
+    emitter.emit("event", "data").emit("event", "data");
 
-  expect(fn1).toHaveBeenCalledWith("data");
-  expect(fn2).toHaveBeenCalledWith("data");
+    expect(fn).toHaveBeenCalledTimes(2);
+    expect(fn).toHaveBeenCalledWith("data");
+  });
+
+  test("should support chaining", () => {
+    const fn = jest.fn();
+
+    emitter.on("event", fn);
+
+    emitter.emit("event", "data1").emit("event", "data2");
+
+    expect(fn).toHaveBeenCalledTimes(2);
+    expect(fn).toHaveBeenNthCalledWith(1, "data1");
+    expect(fn).toHaveBeenNthCalledWith(2, "data2");
+  });
 });
 
 test("should only call listener once", () => {
