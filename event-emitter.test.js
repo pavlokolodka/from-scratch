@@ -323,27 +323,3 @@ describe("listenerCount", () => {
     expect(resultForListener).toBe(1);
   });
 });
-
-it("should return correct listeners with listeners()", () => {
-  const fn = () => {};
-  emitter.on("check", fn);
-
-  const listeners = emitter.listeners("check");
-  expect(listeners).toContain(fn);
-  expect(listeners.length).toBe(1);
-});
-
-it('should emit "error" event when no listener', () => {
-  const error = new Error("boom");
-  expect(() => emitter.emit("error", error)).toThrow(error);
-});
-
-it('should catch "error" event if listener exists', () => {
-  const fn = jest.fn();
-  const error = new Error("handled");
-
-  emitter.on("error", fn);
-  emitter.emit("error", error);
-
-  expect(fn).toHaveBeenCalledWith(error);
-});

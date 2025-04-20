@@ -9,12 +9,7 @@ class MyEventEmitter {
   on(event, listener) {
     this.#validateListener(listener);
 
-    const listeners = this.#eventListeners.get(String(event));
-
-    if (!listeners) {
-      this.#eventListeners.set(String(event), [listener]);
-      return this;
-    }
+    const listeners = this.#eventListeners.get(String(event)) || [];
 
     this.#eventListeners.set(String(event), [...listeners, listener]);
 
@@ -25,17 +20,15 @@ class MyEventEmitter {
     this.#validateListener(listener);
 
     const cb = (...args) => {
-      listener(...args);
       this.removeListener(event, cb);
+      listener(...args);
     };
 
     return this.on(event, cb);
   }
 
   emit(event, ...values) {
-    const listeners = this.#eventListeners.get(String(event));
-
-    if (!listeners) return;
+    const listeners = this.#eventListeners.get(String(event)) || [];
 
     listeners.forEach((listener) => listener(...values));
 
@@ -45,9 +38,7 @@ class MyEventEmitter {
   removeListener(event, listener) {
     this.#validateListener(listener);
 
-    const listeners = this.#eventListeners.get(String(event));
-
-    if (!listeners) return;
+    const listeners = this.#eventListeners.get(String(event)) || [];
 
     const index = listeners.indexOf(listener);
 
