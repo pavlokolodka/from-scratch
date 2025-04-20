@@ -1,12 +1,9 @@
 class MyEventEmitter {
-  /**@type {Map<string, Array<Function>} */
+  /**@type {Map<string, Array<{Function}>} */
   #eventListeners;
-  /**@type {Map<string, Array<Function>} */
-  #eventListenersOnce;
 
   constructor() {
     this.#eventListeners = new Map();
-    this.#eventListenersOnce = new Map();
   }
 
   on(event, listener) {
@@ -22,6 +19,17 @@ class MyEventEmitter {
     this.#eventListeners.set(String(event), [...listeners, listener]);
 
     return this;
+  }
+
+  once(event, listener) {
+    this.#validateListener(listener);
+
+    const cb = (...args) => {
+      listener(...args);
+      this.removeListener(event, cb);
+    };
+
+    return this.on(event, cb);
   }
 
   emit(event, ...values) {
