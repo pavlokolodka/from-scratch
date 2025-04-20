@@ -34,6 +34,26 @@ class MyEventEmitter {
     return this;
   }
 
+  off(event, listener) {
+    return this.removeListener(event, listener);
+  }
+
+  removeListener(event, listener) {
+    this.#validateListener(listener);
+
+    const listeners = this.#eventListeners.get(String(event));
+
+    if (!listeners) return;
+
+    const index = listeners.indexOf(listener);
+
+    if (index !== -1) {
+      this.#eventListeners.set(String(event), listeners.toSpliced(index, 1));
+    }
+
+    return this;
+  }
+
   #validateListener(cb) {
     if (typeof cb !== "function") {
       throw new Error(`Listener should be a function, received ${cb}`);
