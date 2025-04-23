@@ -433,6 +433,13 @@ describe("prependListener", () => {
     const callOrder2 = fn2.mock.invocationCallOrder[0];
 
     expect(callOrder1).toBeGreaterThan(callOrder2);
+
+    fn1.mockReset();
+    fn2.mockReset();
+    emitter.emit("event");
+
+    expect(fn1).toHaveBeenCalled();
+    expect(fn2).toHaveBeenCalled();
   });
 
   it("should add a listener to the beginning of the list (once)", () => {
@@ -447,6 +454,13 @@ describe("prependListener", () => {
     const callOrder2 = fn2.mock.invocationCallOrder[0];
 
     expect(callOrder1).toBeGreaterThan(callOrder2);
+
+    fn1.mockReset();
+    fn2.mockReset();
+    emitter.emit("event");
+
+    expect(fn1).not.toHaveBeenCalled();
+    expect(fn2).toHaveBeenCalled();
   });
 
   it("should add a listener to the beginning of the list (prependListener)", () => {
@@ -461,6 +475,34 @@ describe("prependListener", () => {
     const callOrder2 = fn2.mock.invocationCallOrder[0];
 
     expect(callOrder1).toBeGreaterThan(callOrder2);
+
+    fn1.mockReset();
+    fn2.mockReset();
+    emitter.emit("event");
+
+    expect(fn1).toHaveBeenCalled();
+    expect(fn2).toHaveBeenCalled();
+  });
+
+  it("should add a listener to the beginning of the list (prependOnceListener)", () => {
+    const fn1 = jest.fn();
+    const fn2 = jest.fn();
+
+    emitter.prependOnceListener("event", fn1);
+    emitter.prependListener("event", fn2);
+
+    emitter.emit("event");
+    const callOrder1 = fn1.mock.invocationCallOrder[0];
+    const callOrder2 = fn2.mock.invocationCallOrder[0];
+
+    expect(callOrder1).toBeGreaterThan(callOrder2);
+
+    fn1.mockReset();
+    fn2.mockReset();
+    emitter.emit("event");
+
+    expect(fn1).not.toHaveBeenCalled();
+    expect(fn2).toHaveBeenCalled();
   });
 
   it("should add a listener to the emply list", () => {
@@ -469,10 +511,120 @@ describe("prependListener", () => {
 
     emitter.emit("event");
     expect(fn).toHaveBeenCalled();
+
+    fn.mockReset();
+    emitter.emit("event");
+
+    expect(fn).toHaveBeenCalled();
   });
 
   it("should throw if listener is not a function", () => {
     expect(() => emitter.prependListener("event", "string")).toThrow(
+      "Listener should be a function, received string"
+    );
+  });
+});
+
+describe("prependOnceListener", () => {
+  it("should add and remove a listener to the beginning of the list (on)", () => {
+    const fn1 = jest.fn();
+    const fn2 = jest.fn();
+
+    emitter.on("event", fn1);
+    emitter.prependOnceListener("event", fn2);
+
+    emitter.emit("event");
+    const callOrder1 = fn1.mock.invocationCallOrder[0];
+    const callOrder2 = fn2.mock.invocationCallOrder[0];
+
+    expect(callOrder1).toBeGreaterThan(callOrder2);
+
+    fn1.mockReset();
+    fn2.mockReset();
+    emitter.emit("event");
+
+    expect(fn1).toHaveBeenCalled();
+    expect(fn2).not.toHaveBeenCalled();
+  });
+
+  it("should add and remove a listener to the beginning of the list (once)", () => {
+    const fn1 = jest.fn();
+    const fn2 = jest.fn();
+
+    emitter.once("event", fn1);
+    emitter.prependOnceListener("event", fn2);
+
+    emitter.emit("event");
+    const callOrder1 = fn1.mock.invocationCallOrder[0];
+    const callOrder2 = fn2.mock.invocationCallOrder[0];
+
+    expect(callOrder1).toBeGreaterThan(callOrder2);
+
+    fn1.mockReset();
+    fn2.mockReset();
+    emitter.emit("event");
+
+    expect(fn1).not.toHaveBeenCalled();
+    expect(fn2).not.toHaveBeenCalled();
+  });
+
+  it("should add and remove a listener to the beginning of the list (prependListener)", () => {
+    const fn1 = jest.fn();
+    const fn2 = jest.fn();
+
+    emitter.prependListener("event", fn1);
+    emitter.prependOnceListener("event", fn2);
+
+    emitter.emit("event");
+    const callOrder1 = fn1.mock.invocationCallOrder[0];
+    const callOrder2 = fn2.mock.invocationCallOrder[0];
+
+    expect(callOrder1).toBeGreaterThan(callOrder2);
+
+    fn1.mockReset();
+    fn2.mockReset();
+    emitter.emit("event");
+
+    expect(fn1).toHaveBeenCalled();
+    expect(fn2).not.toHaveBeenCalled();
+  });
+
+  it("should add and remove a listener to the beginning of the list (prependOnceListener)", () => {
+    const fn1 = jest.fn();
+    const fn2 = jest.fn();
+
+    emitter.prependOnceListener("event", fn1);
+    emitter.prependOnceListener("event", fn2);
+
+    emitter.emit("event");
+    const callOrder1 = fn1.mock.invocationCallOrder[0];
+    const callOrder2 = fn2.mock.invocationCallOrder[0];
+
+    expect(callOrder1).toBeGreaterThan(callOrder2);
+
+    fn1.mockReset();
+    fn2.mockReset();
+    emitter.emit("event");
+
+    expect(fn1).not.toHaveBeenCalled();
+    expect(fn2).not.toHaveBeenCalled();
+  });
+
+  it("should add and remove a listener to the emply list", () => {
+    const fn = jest.fn();
+    emitter.prependOnceListener("event", fn);
+
+    emitter.emit("event");
+    expect(fn).toHaveBeenCalled();
+
+    fn.mockReset();
+    emitter.emit("event");
+
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("should throw if listener is not a function", () => {
+    expect(() => emitter.prependOnceListener("event", "string")).toThrow(
       "Listener should be a function, received string"
     );
   });

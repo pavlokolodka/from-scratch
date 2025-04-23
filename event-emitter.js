@@ -47,6 +47,17 @@ class MyEventEmitter {
     return this;
   }
 
+  prependOnceListener(event, listener) {
+    this.#validateListener(listener);
+
+    const cb = (...args) => {
+      this.removeListener(event, cb);
+      listener(...args);
+    };
+
+    return this.prependListener(event, cb);
+  }
+
   emit(event, ...values) {
     const listeners = this.#eventListeners.get(String(event)) || [];
 
