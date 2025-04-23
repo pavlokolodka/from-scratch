@@ -371,3 +371,51 @@ describe("eventNames", () => {
     expect(registeredEvents).toEqual(["undefined"]);
   });
 });
+
+describe("getMaxListeners", () => {
+  it("should return the default max listeners", () => {
+    expect(emitter.getMaxListeners()).toBe(10);
+  });
+
+  it("should return the updated max listeners after setMaxListeners is called", () => {
+    emitter.setMaxListeners(25);
+    expect(emitter.getMaxListeners()).toBe(25);
+  });
+});
+
+describe("setMaxListeners", () => {
+  it("should update max listeners when passed a valid number", () => {
+    emitter.setMaxListeners(5);
+    expect(emitter.getMaxListeners()).toBe(5);
+  });
+
+  it("should throw an error if the argument is not a number", () => {
+    expect(() => emitter.setMaxListeners("not a number")).toThrowError(
+      'The "setMaxListeners" argument must be of type number. Received not a number'
+    );
+  });
+
+  describe("setMaxListeners - invalid types", () => {
+    it.each([
+      ["a string", "string", "string"],
+      ["null", null, "null"],
+      ["undefined", undefined, "undefined"],
+      ["a boolean (true)", true, "true"],
+      ["a boolean (false)", false, "false"],
+      ["an object", {}, "[object Object]"],
+      ["an array", [], ""],
+      ["a function", () => {}, "() => {}"],
+      ["a symbol", Symbol("sym"), "Symbol(sym)"],
+      ["a bigint", 10n, "10"],
+    ])(
+      "should throw an error when value is %s",
+      (_label, input, expectedString) => {
+        expect(() => emitter.setMaxListeners(input)).toThrowError(
+          new Error(
+            `The "setMaxListeners" argument must be of type number. Received ${expectedString}`
+          )
+        );
+      }
+    );
+  });
+});
