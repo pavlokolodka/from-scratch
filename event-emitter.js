@@ -111,6 +111,10 @@ class MyEventEmitter {
     return [...this.#eventListeners.keys()];
   }
 
+  listeners(event) {
+    return [...(this.#eventListeners.get(event) || [])];
+  }
+
   getMaxListeners() {
     return this.#maxListeners;
   }
