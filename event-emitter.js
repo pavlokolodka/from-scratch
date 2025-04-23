@@ -43,7 +43,10 @@ class MyEventEmitter {
     const index = listeners.indexOf(listener);
 
     if (index !== -1) {
-      this.#eventListeners.set(String(event), listeners.toSpliced(index, 1));
+      const updatedListeners = listeners.toSpliced(index, 1);
+      updatedListeners.length
+        ? this.#eventListeners.set(String(event), updatedListeners)
+        : this.#eventListeners.delete(event);
     }
 
     return this;
@@ -71,6 +74,10 @@ class MyEventEmitter {
     if (!listeners) return 0;
 
     return listeners.filter((l) => l === listener).length;
+  }
+
+  eventNames() {
+    return [...this.#eventListeners.keys()];
   }
 
   #validateListener(cb) {

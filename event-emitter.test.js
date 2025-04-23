@@ -323,3 +323,51 @@ describe("listenerCount", () => {
     expect(resultForListener).toBe(1);
   });
 });
+
+describe("eventNames", () => {
+  it("should return an array of events", () => {
+    const fn = jest.fn();
+    const events = ["event1", "event2", "event3"];
+
+    for (const event of events) {
+      emitter.on(event, fn);
+    }
+
+    const registeredEvents = emitter.eventNames();
+
+    expect(registeredEvents).toEqual(events);
+  });
+
+  it("should return an array of events after unregistering an event", () => {
+    const fn = jest.fn();
+
+    const events = ["event1", "event2", "event3"];
+
+    for (const event of events) {
+      emitter.on(event, fn);
+    }
+
+    emitter.removeListener("event3", fn);
+    events.pop();
+
+    const registeredEvents = emitter.eventNames();
+
+    expect(registeredEvents).toEqual(events);
+  });
+
+  it("should return an empty array of events", () => {
+    const registeredEvents = emitter.eventNames();
+
+    expect(registeredEvents).toEqual([]);
+  });
+
+  it("should return an array with undefined", () => {
+    const fn = jest.fn();
+
+    emitter.on(undefined, fn);
+
+    const registeredEvents = emitter.eventNames();
+
+    expect(registeredEvents).toEqual(["undefined"]);
+  });
+});
