@@ -34,6 +34,19 @@ class MyEventEmitter {
     return this.on(event, cb);
   }
 
+  prependListener(event, listener) {
+    this.#validateListener(listener);
+    const listeners = this.#eventListeners.get(String(event)) || [];
+
+    if (listeners.length > this.#maxListeners) {
+      this.#maxListenersWarn(event, listeners.length);
+    }
+
+    this.#eventListeners.set(String(event), [listener, ...listeners]);
+
+    return this;
+  }
+
   emit(event, ...values) {
     const listeners = this.#eventListeners.get(String(event)) || [];
 
@@ -105,7 +118,7 @@ class MyEventEmitter {
 
   #validateListener(cb) {
     if (typeof cb !== "function") {
-      throw new Error(`Listener should be a function, received ${cb}`);
+      throw new Error(`Listener should be a function, received ${String(cb)}`);
     }
   }
 

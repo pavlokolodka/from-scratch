@@ -395,7 +395,7 @@ describe("setMaxListeners", () => {
     );
   });
 
-  describe("setMaxListeners - invalid types", () => {
+  describe("invalid types", () => {
     it.each([
       ["a string", "string", "string"],
       ["null", null, "null"],
@@ -416,6 +416,64 @@ describe("setMaxListeners", () => {
           )
         );
       }
+    );
+  });
+});
+
+describe("prependListener", () => {
+  it("should add a listener to the beginning of the list (on)", () => {
+    const fn1 = jest.fn();
+    const fn2 = jest.fn();
+
+    emitter.on("event", fn1);
+    emitter.prependListener("event", fn2);
+
+    emitter.emit("event");
+    const callOrder1 = fn1.mock.invocationCallOrder[0];
+    const callOrder2 = fn2.mock.invocationCallOrder[0];
+
+    expect(callOrder1).toBeGreaterThan(callOrder2);
+  });
+
+  it("should add a listener to the beginning of the list (once)", () => {
+    const fn1 = jest.fn();
+    const fn2 = jest.fn();
+
+    emitter.once("event", fn1);
+    emitter.prependListener("event", fn2);
+
+    emitter.emit("event");
+    const callOrder1 = fn1.mock.invocationCallOrder[0];
+    const callOrder2 = fn2.mock.invocationCallOrder[0];
+
+    expect(callOrder1).toBeGreaterThan(callOrder2);
+  });
+
+  it("should add a listener to the beginning of the list (prependListener)", () => {
+    const fn1 = jest.fn();
+    const fn2 = jest.fn();
+
+    emitter.prependListener("event", fn1);
+    emitter.prependListener("event", fn2);
+
+    emitter.emit("event");
+    const callOrder1 = fn1.mock.invocationCallOrder[0];
+    const callOrder2 = fn2.mock.invocationCallOrder[0];
+
+    expect(callOrder1).toBeGreaterThan(callOrder2);
+  });
+
+  it("should add a listener to the emply list", () => {
+    const fn = jest.fn();
+    emitter.prependListener("event", fn);
+
+    emitter.emit("event");
+    expect(fn).toHaveBeenCalled();
+  });
+
+  it("should throw if listener is not a function", () => {
+    expect(() => emitter.prependListener("event", "string")).toThrow(
+      "Listener should be a function, received string"
     );
   });
 });
