@@ -144,10 +144,21 @@ describe("emit", () => {
 });
 
 describe("off/removeListener", () => {
-  it("should remove a listener", () => {
+  it("should remove a listener (on)", () => {
     const fn = jest.fn();
 
     emitter.on("event", fn);
+    emitter.removeListener("event", fn);
+
+    emitter.emit("event");
+
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("should remove a listener (once)", () => {
+    const fn = jest.fn();
+
+    emitter.once("event", fn);
     emitter.removeListener("event", fn);
 
     emitter.emit("event");
@@ -641,20 +652,24 @@ describe("listeners", () => {
   it("should return a copy of the listener array", () => {
     const fn1 = jest.fn();
     const fn2 = jest.fn();
+    const fn3 = jest.fn();
+    const fn4 = jest.fn();
 
-    emitter.prependListener("event", fn1);
-    emitter.prependListener("event", fn2);
+    emitter.on("event", fn1);
+    emitter.once("event", fn2);
+    emitter.prependListener("event", fn3);
+    emitter.prependOnceListener("event", fn4);
 
     const listeners = emitter.listeners("event");
 
-    expect(listeners).toEqual([fn2, fn1]);
+    expect(listeners).toEqual([fn4, fn3, fn1, fn2]);
     // reference comparison
     expect(listeners).not.toBe(emitter.listeners("event"));
   });
 
   it("should return a copy of the listener array (modifying returned array)", () => {
     const listener = jest.fn();
-    emitter.prependListener("event", listener);
+    emitter.on("event", listener);
 
     const copy = emitter.listeners("event");
     copy.push(jest.fn());

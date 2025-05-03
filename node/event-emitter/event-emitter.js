@@ -1,5 +1,5 @@
 class MyEventEmitter {
-  /**@type {Map<string, Array<{Function}>} */
+  /**@type {Map<string, Array<{Function} & { listener: () => void }>} */
   #eventListeners;
   /**@type {number} */
   #maxListeners;
@@ -30,6 +30,7 @@ class MyEventEmitter {
       this.removeListener(event, cb);
       listener(...args);
     };
+    cb.listener = listener;
 
     return this.on(event, cb);
   }
@@ -54,6 +55,7 @@ class MyEventEmitter {
       this.removeListener(event, cb);
       listener(...args);
     };
+    cb.listener = listener;
 
     return this.prependListener(event, cb);
   }
@@ -71,7 +73,9 @@ class MyEventEmitter {
 
     const listeners = this.#eventListeners.get(String(event)) || [];
 
-    const index = listeners.indexOf(listener);
+    const index = listeners.findIndex(
+      (el) => el === listener || el.listener === listener
+    );
 
     if (index !== -1) {
       const updatedListeners = listeners.toSpliced(index, 1);
@@ -112,9 +116,16 @@ class MyEventEmitter {
   }
 
   listeners(event) {
-    return [...(this.#eventListeners.get(event) || [])];
+    const listeners = this.#eventListeners.get(event) || [];
+
+    return listeners.map((el) =>
+      typeof el.listener === "function" ? el.listener : el
+    );
   }
 
+  rawListeners(event) {
+    return [...(this.#eventListeners.get(event) || [])];
+  }
   getMaxListeners() {
     return this.#maxListeners;
   }
