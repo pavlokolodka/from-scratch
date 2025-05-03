@@ -9,6 +9,13 @@ class MyEventEmitter {
     this.#maxListeners = 10;
   }
 
+  /**
+   * Registers a listener to be called whenever the event is emitted.
+   *
+   * @param {string | symbol} event - The name of the event.
+   * @param {Function} listener - The callback function.
+   * @returns {this}
+   */
   on(event, listener) {
     this.#validateListener(listener);
 
@@ -23,6 +30,13 @@ class MyEventEmitter {
     return this;
   }
 
+  /**
+   * Registers a one-time listener for the event. It will be removed after the first call.
+   *
+   * @param {string | symbol} event - The name of the event.
+   * @param {Function} listener - The callback function.
+   * @returns {this}
+   */
   once(event, listener) {
     this.#validateListener(listener);
 
@@ -35,6 +49,13 @@ class MyEventEmitter {
     return this.on(event, cb);
   }
 
+  /**
+   * Adds a listener to the beginning of the listeners array for the specified event.
+   *
+   * @param {string | symbol} event - The name of the event.
+   * @param {Function} listener - The callback function.
+   * @returns {this}
+   */
   prependListener(event, listener) {
     this.#validateListener(listener);
     const listeners = this.#eventListeners.get(String(event)) || [];
@@ -48,6 +69,13 @@ class MyEventEmitter {
     return this;
   }
 
+  /**
+   * Adds a one-time listener to the beginning of the listeners array for the specified event.
+   *
+   * @param {string | symbol} event - The name of the event.
+   * @param {Function} listener - The callback function.
+   * @returns {this}
+   */
   prependOnceListener(event, listener) {
     this.#validateListener(listener);
 
@@ -60,6 +88,13 @@ class MyEventEmitter {
     return this.prependListener(event, cb);
   }
 
+  /**
+   * Emits an event, invoking all registered listeners with the provided arguments.
+   *
+   * @param {string | symbol} event - The name of the event.
+   * @param {...any} values - Arguments passed to each listener.
+   * @returns {this}
+   */
   emit(event, ...values) {
     const listeners = this.#eventListeners.get(String(event)) || [];
 
@@ -68,6 +103,13 @@ class MyEventEmitter {
     return this;
   }
 
+  /**
+   * Removes a specific listener from the event.
+   *
+   * @param {string | symbol} event - The name of the event.
+   * @param {Function} listener - The callback function to remove.
+   * @returns {this}
+   */
   removeListener(event, listener) {
     this.#validateListener(listener);
 
@@ -87,6 +129,12 @@ class MyEventEmitter {
     return this;
   }
 
+  /**
+   * Removes all listeners for a specific event, or all events if no event is specified.
+   *
+   * @param {string | symbol} [event] - The name of the event (optional).
+   * @returns {this}
+   */
   removeAllListeners(event) {
     if (event === undefined) {
       this.#eventListeners = new Map();
@@ -97,6 +145,13 @@ class MyEventEmitter {
     return this;
   }
 
+  /**
+   * Returns the number of listeners for a given event.
+   *
+   * @param {string | symbol} event - The name of the event.
+   * @param {Function} [listener] - If provided, counts only this specific listener.
+   * @returns {number}
+   */
   listenerCount(event, listener) {
     if (listener === undefined) {
       return (this.#eventListeners.get(String(event)) || []).length;
@@ -111,10 +166,21 @@ class MyEventEmitter {
     return listeners.filter((l) => l === listener).length;
   }
 
+  /**
+   * Returns an array of all event names that have listeners.
+   *
+   * @returns {Array<string | symbol>}
+   */
   eventNames() {
     return [...this.#eventListeners.keys()];
   }
 
+  /**
+   * Returns an array of listener functions for the given event.
+   *
+   * @param {string | symbol} event - The name of the event.
+   * @returns {Function[]}
+   */
   listeners(event) {
     const listeners = this.#eventListeners.get(event) || [];
 
@@ -123,13 +189,31 @@ class MyEventEmitter {
     );
   }
 
+  /**
+   * Returns an array of raw listener functions for the given event.
+   * For `.once()` listeners, this returns the internal wrapper function.
+   *
+   * @param {string | symbol} event - The name of the event.
+   * @returns {Function[]}
+   */
   rawListeners(event) {
     return [...(this.#eventListeners.get(event) || [])];
   }
+
+  /**
+   * Returns the current maximum number of listeners for any single event.
+   *
+   * @returns {number}
+   */
   getMaxListeners() {
     return this.#maxListeners;
   }
 
+  /**
+   * Sets the maximum number of listeners for any single event.
+   *
+   * @param {number} number - The new maximum number.
+   */
   setMaxListeners(number) {
     if (typeof number !== "number") {
       throw new Error(
@@ -160,9 +244,9 @@ class MyEventEmitter {
     );
   }
 
-  /**
-   * Aliases
-   */
+  //
+  // Aliases
+  //
 
   off(event, listener) {
     return this.removeListener(event, listener);
