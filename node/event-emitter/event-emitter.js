@@ -215,11 +215,17 @@ class MyEventEmitter {
    * @param {number} number - The new maximum number.
    */
   setMaxListeners(number) {
-    if (typeof number !== "number") {
+    if (typeof number !== "number" || Number.isNaN(number)) {
       throw new Error(
         `The "setMaxListeners" argument must be of type number. Received ${String(
           number
         )}`
+      );
+    }
+
+    if (number < 0) {
+      throw new Error(
+        `The "setMaxListeners" argument must be a non-negative number. Received ${number}`
       );
     }
 

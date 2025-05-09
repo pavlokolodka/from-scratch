@@ -410,6 +410,7 @@ describe("setMaxListeners", () => {
     it.each([
       ["a string", "string", "string"],
       ["null", null, "null"],
+      ["NaN", NaN, "NaN"],
       ["undefined", undefined, "undefined"],
       ["a boolean (true)", true, "true"],
       ["a boolean (false)", false, "false"],
