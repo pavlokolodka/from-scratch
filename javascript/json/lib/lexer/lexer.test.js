@@ -141,12 +141,12 @@ describe("object", () => {
   });
 
   it("should throw an error for unterminated objects", () => {
-    const input = '{"key": "value",}';
+    const input = '{"key": "value"';
     assert.throws(() => lexer(input));
   });
 
   it("should throw an error for trailing comma", () => {
-    const input = '["element",]';
+    const input = '{"key": "value",}';
     assert.throws(() => lexer(input));
   });
 });

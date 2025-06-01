@@ -1,4 +1,4 @@
-const TYPE = require("./types");
+const TYPE = require("../types");
 
 /**
  *

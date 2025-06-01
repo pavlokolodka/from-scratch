@@ -1,4 +1,4 @@
-const TYPE = require("./types");
+const TYPE = require("../types");
 
 /**
  *
@@ -9,7 +9,6 @@ function lexer(text) {
   if (typeof text !== "string" || text.length === 0) {
     return [];
   }
-  const str = text.replace(/\s+/g, "");
 
   /**@type {Array<{type: string, value: any}} */
   const tokens = [];
@@ -19,59 +18,64 @@ function lexer(text) {
   let numberOfRightBracket = 0;
   let numberOfLeftBracket = 0;
 
-  while (charIndex < str.length) {
-    let char = str[charIndex];
+  while (charIndex < text.length) {
+    let char = text[charIndex];
+
+    if (char === TOKEN.WHITESPACE) {
+      charIndex++;
+      continue;
+    }
 
     // PRIMITIVES
     if (char === TOKEN.DOUBLE_QUOTE) {
       const value = [];
       charIndex++;
-      char = str[charIndex];
+      char = text[charIndex];
       while (char !== TOKEN.DOUBLE_QUOTE) {
-        if (charIndex >= str.length) {
+        if (charIndex >= text.length) {
           throw new Error("Unterminated string literal");
         }
         value.push(char);
         charIndex++;
-        char = str[charIndex];
+        char = text[charIndex];
       }
       tokens.push({ type: TYPE.STRING, value: value.join("") });
       charIndex++;
       continue;
     }
-    if (VALUE_REGEX.NUMBER.test(char)) {
+    if (REGEX.NUMBER.test(char)) {
       checkBoolOrNull(tokens, char);
       const value = [char];
       charIndex++;
-      char = str[charIndex];
-      while (VALUE_REGEX.NUMBER.test(char)) {
-        if (charIndex >= str.length) {
+      char = text[charIndex];
+      while (REGEX.NUMBER.test(char)) {
+        if (charIndex >= text.length) {
           throw new Error("Unterminated number literal");
         }
         value.push(char);
         charIndex++;
-        char = str[charIndex];
+        char = text[charIndex];
       }
       if (Number.isNaN(value.join(""))) {
         throw new Error("Invalid number literal");
       }
       tokens.push({ type: TYPE.NUMBER, value: Number(value.join("")) });
-      VALUE_REGEX.NUMBER.test(char) ? charIndex++ : null;
+      REGEX.NUMBER.test(char) ? charIndex++ : null;
       continue;
     }
-    if (VALUE_REGEX.TRUE.test(str.slice(charIndex))) {
+    if (REGEX.TRUE.test(text.slice(charIndex))) {
       checkBoolOrNull(tokens, char);
       tokens.push({ type: TYPE.BOOLEAN, value: true });
       charIndex += TOKEN.TRUE.length;
       continue;
     }
-    if (VALUE_REGEX.FALSE.test(str.slice(charIndex))) {
+    if (REGEX.FALSE.test(text.slice(charIndex))) {
       checkBoolOrNull(tokens, char);
       tokens.push({ type: TYPE.BOOLEAN, value: false });
       charIndex += TOKEN.FALSE.length;
       continue;
     }
-    if (VALUE_REGEX.NULL.test(str.slice(charIndex))) {
+    if (REGEX.NULL.test(text.slice(charIndex))) {
       checkBoolOrNull(tokens, char);
       tokens.push({ type: TYPE.NULL, value: null });
       charIndex += TOKEN.NULL.length;
@@ -81,9 +85,11 @@ function lexer(text) {
     if (char === TOKEN.OPEN_OBJECT) {
       tokens.push({ type: TYPE.OPEN_OBJECT, value: char });
       charIndex++;
-      const nextChar = str[charIndex];
+      const nextChar = text
+        .slice(charIndex)
+        .replace(REGEX.ALL_WHITESPACE, "")[0];
       if (nextChar !== TOKEN.DOUBLE_QUOTE && nextChar !== TOKEN.CLOSE_OBJECT) {
-        throw new Error(`Unexpected character after '{': ${nextChar}`);
+        throw new Error(`Unexpected token after '{': ${nextChar}`);
       }
       numberOfLeftBrace++;
       continue;
@@ -110,10 +116,23 @@ function lexer(text) {
     }
     if (char === TOKEN.COMMA) {
       tokens.push({ type: TYPE.COMMA, value: char });
+      const openBrace = tokens.find((el) => el.type === TYPE.OPEN_OBJECT);
+      const openBracket = tokens.find((el) => el.type === TYPE.OPEN_ARRAY);
+      if (!openBrace && !openBracket) {
+        throw new Error(`Unexpected non-whitespace character: ${char}`);
+      }
+
       charIndex++;
-      const nextChar = str[charIndex];
-      if (nextChar == TOKEN.CLOSE_OBJECT || nextChar == TOKEN.CLOSE_ARRAY) {
-        throw new Error(`Unexpected trailing comma: ${nextChar}`);
+      const nextChar = text
+        .slice(charIndex)
+        .replace(REGEX.ALL_WHITESPACE, "")[0];
+      if (
+        nextChar == TOKEN.CLOSE_OBJECT ||
+        nextChar == TOKEN.CLOSE_ARRAY ||
+        nextChar == TOKEN.COMMA ||
+        nextChar == TOKEN.COLON
+      ) {
+        throw new Error(`Unexpected token: ${nextChar}`);
       }
       continue;
     }
@@ -121,9 +140,9 @@ function lexer(text) {
     if (char === TOKEN.OPEN_ARRAY) {
       tokens.push({ type: TYPE.OPEN_ARRAY, value: char });
       charIndex++;
-      const nextChar = str[charIndex];
+      const nextChar = text[charIndex];
       if (!nextChar) {
-        throw new Error(`Unexpected character after '[': ${nextChar}`);
+        throw new Error(`Unexpected token after '[': ${nextChar}`);
       }
       numberOfLeftBracket++;
       continue;
@@ -142,7 +161,7 @@ function lexer(text) {
       continue;
     }
 
-    throw new Error(`Unexpected character: ${char}`);
+    throw new Error(`Unexpected token: ${char}`);
   }
 
   if (numberOfLeftBrace !== numberOfRightBrace) {
@@ -151,7 +170,7 @@ function lexer(text) {
   if (numberOfLeftBracket !== numberOfRightBracket) {
     throw new Error(`Expected ',' or ']' after array element`);
   }
-  console.log("tokens", tokens);
+
   return tokens;
 }
 
@@ -183,12 +202,12 @@ const TOKEN = {
   FALSE: "false",
 };
 
-const VALUE_REGEX = {
+const REGEX = {
   NUMBER: /^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/,
   NULL: /^null/,
   TRUE: /^true/,
   FALSE: /^false/,
-  WHITESPACE: /^\s+/,
+  ALL_WHITESPACE: /\s+/g,
 };
 
 module.exports = { lexer };
