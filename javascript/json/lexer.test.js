@@ -141,7 +141,43 @@ describe("object", () => {
   });
 
   it("should throw an error for unterminated objects", () => {
-    const input = '{"key": "value"';
+    const input = '{"key": "value",}';
+    assert.throws(() => lexer(input));
+  });
+
+  it("should throw an error for trailing comma", () => {
+    const input = '["element",]';
+    assert.throws(() => lexer(input));
+  });
+});
+
+describe("array", () => {
+  it("should tokenize an empty array", () => {
+    const input = "[]";
+    const result = lexer(input);
+    assert.deepStrictEqual(result, [
+      { type: "OPEN_ARRAY", value: "[" },
+      { type: "CLOSE_ARRAY", value: "]" },
+    ]);
+  });
+
+  it("should tokenize an array with a single element", () => {
+    const input = '["element"]';
+    const result = lexer(input);
+    assert.deepStrictEqual(result, [
+      { type: "OPEN_ARRAY", value: "[" },
+      { type: "STRING", value: "element" },
+      { type: "CLOSE_ARRAY", value: "]" },
+    ]);
+  });
+
+  it("should throw an error for unterminated arrays", () => {
+    const input = '["element"';
+    assert.throws(() => lexer(input));
+  });
+
+  it("should throw an error for trailing comma", () => {
+    const input = '["element",]';
     assert.throws(() => lexer(input));
   });
 });

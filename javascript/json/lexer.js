@@ -16,6 +16,8 @@ function lexer(text) {
   let charIndex = 0;
   let numberOfRightBrace = 0;
   let numberOfLeftBrace = 0;
+  let numberOfRightBracket = 0;
+  let numberOfLeftBracket = 0;
 
   while (charIndex < str.length) {
     let char = str[charIndex];
@@ -110,19 +112,46 @@ function lexer(text) {
       tokens.push({ type: TYPE.COMMA, value: char });
       charIndex++;
       const nextChar = str[charIndex];
-      if (nextChar == TOKEN.CLOSE_OBJECT && nextChar == TOKEN.CLOSE_ARRAY) {
+      if (nextChar == TOKEN.CLOSE_OBJECT || nextChar == TOKEN.CLOSE_ARRAY) {
         throw new Error(`Unexpected trailing comma: ${nextChar}`);
       }
       continue;
     }
-    // TODO: ARRAY
+    // ARRAY
+    if (char === TOKEN.OPEN_ARRAY) {
+      tokens.push({ type: TYPE.OPEN_ARRAY, value: char });
+      charIndex++;
+      const nextChar = str[charIndex];
+      if (!nextChar) {
+        throw new Error(`Unexpected character after '[': ${nextChar}`);
+      }
+      numberOfLeftBracket++;
+      continue;
+    }
+    if (char === TOKEN.CLOSE_ARRAY) {
+      if (
+        !numberOfLeftBracket ||
+        numberOfLeftBracket < numberOfRightBracket + 1
+      ) {
+        throw new Error(`Unexpected close array: ${char}`);
+      }
+
+      tokens.push({ type: TYPE.CLOSE_ARRAY, value: char });
+      numberOfRightBracket++;
+      charIndex++;
+      continue;
+    }
+
     throw new Error(`Unexpected character: ${char}`);
   }
 
   if (numberOfLeftBrace !== numberOfRightBrace) {
     throw new Error(`Expected ',' or '}' after property value`);
   }
-
+  if (numberOfLeftBracket !== numberOfRightBracket) {
+    throw new Error(`Expected ',' or ']' after array element`);
+  }
+  console.log("tokens", tokens);
   return tokens;
 }
 
