@@ -52,3 +52,65 @@ describe("primitive", () => {
     assert.strictEqual(result, "hello");
   });
 });
+
+describe("object", () => {
+  it("should parse an empty object", () => {
+    const tokens = [
+      { type: "OPEN_OBJECT", value: "{" },
+      { type: "CLOSE_OBJECT", value: "}" },
+    ];
+    const result = parse(tokens);
+    assert.deepStrictEqual(result, {});
+  });
+
+  it("should parse an object with one key-value pair", () => {
+    const tokens = [
+      { type: "OPEN_OBJECT", value: "{" },
+      { type: "STRING", value: "key" },
+      { type: "COLON", value: ":" },
+      { type: "STRING", value: "value" },
+      { type: "CLOSE_OBJECT", value: "}" },
+    ];
+    const result = parse(tokens);
+    assert.deepStrictEqual(result, { key: "value" });
+  });
+
+  it("should parse an object with multiple key-value pairs", () => {
+    const tokens = [
+      { type: "OPEN_OBJECT", value: "{" },
+      { type: "STRING", value: "key1" },
+      { type: "COLON", value: ":" },
+      { type: "STRING", value: "value1" },
+      { type: "COMMA", value: "," },
+      { type: "STRING", value: "key2" },
+      { type: "COLON", value: ":" },
+      { type: "NUMBER", value: 42 },
+      { type: "CLOSE_OBJECT", value: "}" },
+    ];
+    const result = parse(tokens);
+    assert.deepStrictEqual(result, { key1: "value1", key2: 42 });
+  });
+
+  it("should parse an object with a nested object", () => {
+    const tokens = [
+      { type: "OPEN_OBJECT", value: "{" },
+      { type: "STRING", value: "outerKey" },
+      { type: "COLON", value: ":" },
+      { type: "OPEN_OBJECT", value: "{" },
+      { type: "STRING", value: "innerKey" },
+      { type: "COLON", value: ":" },
+      { type: "STRING", value: "innerValue" },
+      { type: "CLOSE_OBJECT", value: "}" },
+      { type: "COMMA", value: "," },
+      { type: "STRING", value: "key" },
+      { type: "COLON", value: ":" },
+      { type: "NUMBER", value: 123 },
+      { type: "CLOSE_OBJECT", value: "}" },
+    ];
+    const result = parse(tokens);
+    assert.deepStrictEqual(result, {
+      outerKey: { innerKey: "innerValue" },
+      key: 123,
+    });
+  });
+});
