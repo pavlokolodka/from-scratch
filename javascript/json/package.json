@@ -1,0 +1,12 @@
+{
+  "name": "json",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "node lexer.test.js"
+  },
+  "keywords": [],
+  "author": "Pavlo Kolodka",
+  "license": "MIT",
+  "description": ""
+}
