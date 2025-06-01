@@ -114,3 +114,60 @@ describe("object", () => {
     });
   });
 });
+
+describe("array", () => {
+  it("should parse an empty array", () => {
+    const tokens = [
+      { type: "OPEN_ARRAY", value: "[" },
+      { type: "CLOSE_ARRAY", value: "]" },
+    ];
+    const result = parse(tokens);
+    assert.deepStrictEqual(result, []);
+  });
+
+  it("should parse an array with one element", () => {
+    const tokens = [
+      { type: "OPEN_ARRAY", value: "[" },
+      { type: "STRING", value: "element" },
+      { type: "CLOSE_ARRAY", value: "]" },
+    ];
+    const result = parse(tokens);
+    assert.deepStrictEqual(result, ["element"]);
+  });
+
+  it("should parse an array with multiple elements", () => {
+    const tokens = [
+      { type: "OPEN_ARRAY", value: "[" },
+      { type: "STRING", value: "element1" },
+      { type: "COMMA", value: "," },
+      { type: "NUMBER", value: 42 },
+      { type: "CLOSE_ARRAY", value: "]" },
+    ];
+    const result = parse(tokens);
+    assert.deepStrictEqual(result, ["element1", 42]);
+  });
+
+  it("should parse an array with nested arrays and objects", () => {
+    const tokens = [
+      { type: "OPEN_ARRAY", value: "[" },
+      { type: "STRING", value: "element1" },
+      { type: "COMMA", value: "," },
+      { type: "OPEN_OBJECT", value: "{" },
+      { type: "STRING", value: "key" },
+      { type: "COLON", value: ":" },
+      { type: "NUMBER", value: 123 },
+      { type: "CLOSE_OBJECT", value: "}" },
+      { type: "COMMA", value: "," },
+      { type: "OPEN_ARRAY", value: "[" },
+      { type: "STRING", value: "nestedElement" },
+      { type: "CLOSE_ARRAY", value: "]" },
+      { type: "CLOSE_ARRAY", value: "]" },
+    ];
+    const result = parse(tokens);
+    assert.deepStrictEqual(result, [
+      "element1",
+      { key: 123 },
+      ["nestedElement"],
+    ]);
+  });
+});

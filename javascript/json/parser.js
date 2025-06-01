@@ -26,6 +26,8 @@ function parse(tokens) {
         return token.value;
       case TYPE.OPEN_OBJECT:
         return parseObject(tokens, tokenIndex);
+      case TYPE.OPEN_ARRAY:
+        return parseArray(tokens, tokenIndex);
       default:
         throw new Error(`Unexpected token type: ${token.type}`);
     }
@@ -59,6 +61,28 @@ function parse(tokens) {
     return obj;
   }
 
+  /**
+   *
+   * @param {Array<{type: string, value: any}} tokens
+   * @returns {Array<any>}
+   */
+  function parseArray(tokens) {
+    const arr = [];
+    tokenIndex++;
+    let token = tokens[tokenIndex];
+    while (token.type !== TYPE.CLOSE_ARRAY) {
+      if (token.type === TYPE.COMMA) {
+        tokenIndex++;
+      } else {
+        const value = parseValue(tokens, tokenIndex);
+        arr.push(value);
+        tokenIndex++;
+      }
+
+      token = tokens[tokenIndex];
+    }
+    return arr;
+  }
   let tokenIndex = 0;
   return parseValue(tokens);
 }
