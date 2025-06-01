@@ -14,6 +14,12 @@ describe("string", () => {
     assert.throws(() => lexer(input), /Unterminated string literal/);
   });
 
+  it("should return empty string for an empty string input", () => {
+    const input = '""';
+    const result = lexer(input);
+    assert.deepStrictEqual(result, [{ type: "STRING", value: "" }]);
+  });
+
   it("should return empty array for an empty input", () => {
     const input = "";
     const result = lexer(input);
@@ -108,6 +114,34 @@ describe("null", () => {
 
   it("should throw an error for invalid null literals", () => {
     const input = "nullnull";
+    assert.throws(() => lexer(input));
+  });
+});
+
+describe("object", () => {
+  it("should tokenize an empty object", () => {
+    const input = "{}";
+    const result = lexer(input);
+    assert.deepStrictEqual(result, [
+      { type: "OPEN_OBJECT", value: "{" },
+      { type: "CLOSE_OBJECT", value: "}" },
+    ]);
+  });
+
+  it("should tokenize an object with a single key-value pair", () => {
+    const input = '{"key": "value"}';
+    const result = lexer(input);
+    assert.deepStrictEqual(result, [
+      { type: "OPEN_OBJECT", value: "{" },
+      { type: "STRING", value: "key" },
+      { type: "COLON", value: ":" },
+      { type: "STRING", value: "value" },
+      { type: "CLOSE_OBJECT", value: "}" },
+    ]);
+  });
+
+  it("should throw an error for unterminated objects", () => {
+    const input = '{"key": "value"';
     assert.throws(() => lexer(input));
   });
 });

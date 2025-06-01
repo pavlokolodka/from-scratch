@@ -1,21 +1,26 @@
+const TYPE = require("./types");
+
 /**
  *
- * @param {string} str
+ * @param {string} text
+ * @returns {Array<{type: string, value: any}>}
  */
-function lexer(str) {
-  if (typeof str !== "string" || str.length === 0) {
+function lexer(text) {
+  if (typeof text !== "string" || text.length === 0) {
     return [];
   }
+  const str = text.replace(/\s+/g, "");
 
+  /**@type {Array<{type: string, value: any}} */
   const tokens = [];
   let charIndex = 0;
+  let numberOfRightBrace = 0;
+  let numberOfLeftBrace = 0;
+
   while (charIndex < str.length) {
     let char = str[charIndex];
 
-    if (char === TOKEN.WHITESPACE) {
-      charIndex++;
-      continue;
-    }
+    // PRIMITIVES
     if (char === TOKEN.DOUBLE_QUOTE) {
       const value = [];
       charIndex++;
@@ -70,8 +75,52 @@ function lexer(str) {
       charIndex += TOKEN.NULL.length;
       continue;
     }
+    // OBJECT
+    if (char === TOKEN.OPEN_OBJECT) {
+      tokens.push({ type: TYPE.OPEN_OBJECT, value: char });
+      charIndex++;
+      const nextChar = str[charIndex];
+      if (nextChar !== TOKEN.DOUBLE_QUOTE && nextChar !== TOKEN.CLOSE_OBJECT) {
+        throw new Error(`Unexpected character after '{': ${nextChar}`);
+      }
+      numberOfLeftBrace++;
+      continue;
+    }
+    if (char === TOKEN.CLOSE_OBJECT) {
+      if (!numberOfLeftBrace || numberOfLeftBrace < numberOfRightBrace + 1) {
+        throw new Error(`Unexpected close object: ${char}`);
+      }
 
+      tokens.push({ type: TYPE.CLOSE_OBJECT, value: char });
+      numberOfRightBrace++;
+      charIndex++;
+      continue;
+    }
+    if (char === TOKEN.COLON) {
+      const previousToken = tokens[tokens.length - 1];
+      if (previousToken && previousToken.type !== TYPE.STRING) {
+        throw new Error(`Unexpected colon: ${char}`);
+      }
+
+      tokens.push({ type: TYPE.COLON, value: char });
+      charIndex++;
+      continue;
+    }
+    if (char === TOKEN.COMMA) {
+      tokens.push({ type: TYPE.COMMA, value: char });
+      charIndex++;
+      const nextChar = str[charIndex];
+      if (nextChar == TOKEN.CLOSE_OBJECT && nextChar == TOKEN.CLOSE_ARRAY) {
+        throw new Error(`Unexpected trailing comma: ${nextChar}`);
+      }
+      continue;
+    }
+    // TODO: ARRAY
     throw new Error(`Unexpected character: ${char}`);
+  }
+
+  if (numberOfLeftBrace !== numberOfRightBrace) {
+    throw new Error(`Expected ',' or '}' after property value`);
   }
 
   return tokens;
@@ -90,17 +139,6 @@ function checkBoolOrNull(tokens, char) {
     throw new Error(`Unexpected non-whitespace character: ${char}`);
   }
 }
-
-const TYPE = {
-  OPEN_OBJECT: "OPEN_OBJECT",
-  CLOSE_OBJECT: "CLOSE_OBJECT",
-  OPEN_ARRAY: "OPEN_ARRAY",
-  CLOSE_ARRAY: "CLOSE_ARRAY",
-  NUMBER: "NUMBER",
-  STRING: "STRING",
-  NULL: "NULL",
-  BOOLEAN: "BOOLEAN",
-};
 
 const TOKEN = {
   OPEN_OBJECT: "{",
