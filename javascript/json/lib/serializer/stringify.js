@@ -1,12 +1,17 @@
 /**
  *
  * @param {any} value
- * @returns {string}
+ * @returns {string | undefined}
  */
 function stringify(value) {
   switch (typeof value) {
     case "number":
+      if (!Number.isFinite(value)) {
+        return "null";
+      }
       return String(value);
+    case "bigint":
+      throw new Error("Cannot serialize BigInt value");
     case "string":
       return `"${value}"`;
     case "boolean":
@@ -14,6 +19,12 @@ function stringify(value) {
     case "object":
       if (value === null) {
         return "null";
+      }
+      if (value instanceof Set || value instanceof Map) {
+        return {};
+      }
+      if (value instanceof Date) {
+        return `"${value.toISOString()}"`;
       }
       if (Array.isArray(value)) {
         return stringifyArray(value);

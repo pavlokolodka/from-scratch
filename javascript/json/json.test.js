@@ -218,6 +218,37 @@ describe("stringify", () => {
       const result = stringify(input);
       assert.strictEqual(result, "null");
     });
+
+    it('should stringify Infinity as "null"', () => {
+      const input = Infinity;
+      const result = stringify(input);
+      assert.strictEqual(result, "null");
+    });
+
+    it('should stringify NaN as "null"', () => {
+      const input = NaN;
+      const result = stringify(input);
+      assert.strictEqual(result, "null");
+    });
+
+    it("should throw an error for BigInt", () => {
+      const input = BigInt(123);
+      assert.throws(() => {
+        stringify(input);
+      }, /Cannot serialize BigInt value/);
+    });
+
+    it("should return undefined for functions", () => {
+      const input = function () {};
+      const result = stringify(input);
+      assert.strictEqual(result, undefined);
+    });
+
+    it("should return undefined for symbols", () => {
+      const input = Symbol("test");
+      const result = stringify(input);
+      assert.strictEqual(result, undefined);
+    });
   });
 
   describe("arrays", () => {
@@ -307,6 +338,34 @@ describe("stringify", () => {
       const input = { a: 1, b: sym, c: "test" };
       const result = stringify(input);
       assert.strictEqual(result, '{"a":1,"c":"test"}');
+    });
+
+    it("should return an empty object for Set", () => {
+      const input = new Set([1, 2, 3]);
+      const result = stringify(input);
+      assert.deepStrictEqual(result, {});
+    });
+
+    it("should return an empty object for Map", () => {
+      const input = new Map([
+        ["key1", "value1"],
+        ["key2", "value2"],
+      ]);
+      const result = stringify(input);
+      assert.deepStrictEqual(result, {});
+    });
+
+    it("should stringify a Date object", () => {
+      const input = new Date("2023-10-01T12:00:00Z");
+      const result = stringify(input);
+      assert.strictEqual(result, '"2023-10-01T12:00:00.000Z"');
+    });
+
+    it("should stringify a Date object (property)", () => {
+      const date = new Date("2023-10-01T12:00:00Z");
+      const input = { date };
+      const result = stringify(input);
+      assert.strictEqual(result, `{"date":"2023-10-01T12:00:00.000Z"}`);
     });
   });
 });
