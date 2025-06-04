@@ -1,3 +1,8 @@
+/**
+ *
+ * @param {any} value
+ * @returns {string}
+ */
 function stringify(value) {
   switch (typeof value) {
     case "number":
@@ -11,13 +16,35 @@ function stringify(value) {
         return "null";
       }
       if (Array.isArray(value)) {
-        return `[${value.map(stringify).join(",")}]`;
+        return stringifyArray(value);
       }
-      const entries = Object.entries(value)
-        .map(([key, val]) => `"${key}":${stringify(val)}`)
-        .join(",");
-      return `{${entries}}`;
+      return stringifyObject(value);
   }
+}
+
+function stringifyArray(value) {
+  const values = value
+    .map((el) => (isInvalidJSONValue(el) ? stringify(null) : stringify(el)))
+    .join(",");
+  return `[${values}]`;
+}
+
+function stringifyObject(value) {
+  const entries = Object.entries(value)
+    .map(([key, val]) =>
+      isInvalidJSONValue(val) ? undefined : `"${key}":${stringify(val)}`
+    )
+    .filter((el) => el !== undefined)
+    .join(",");
+  return `{${entries}}`;
+}
+
+function isInvalidJSONValue(value) {
+  return (
+    typeof value === "undefined" ||
+    typeof value === "function" ||
+    typeof value === "symbol"
+  );
 }
 
 module.exports = stringify;

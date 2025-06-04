@@ -244,6 +244,25 @@ describe("stringify", () => {
       const result = stringify(input);
       assert.strictEqual(result, "[null,null]");
     });
+
+    it("should replace undefined with null", () => {
+      const input = [1, undefined, "test"];
+      const result = stringify(input);
+      assert.strictEqual(result, '[1,null,"test"]');
+    });
+
+    it("should replace functions with null", () => {
+      const input = [1, function () {}, "test"];
+      const result = stringify(input);
+      assert.strictEqual(result, '[1,null,"test"]');
+    });
+
+    it("should replace symbols with null", () => {
+      const sym = Symbol("test");
+      const input = [1, sym, "test"];
+      const result = stringify(input);
+      assert.strictEqual(result, '[1,null,"test"]');
+    });
   });
 
   describe("objects", () => {
@@ -269,6 +288,25 @@ describe("stringify", () => {
       const input = { a: null, b: null };
       const result = stringify(input);
       assert.strictEqual(result, '{"a":null,"b":null}');
+    });
+
+    it("should ignore undefined", () => {
+      const input = { a: 1, b: undefined, c: "test" };
+      const result = stringify(input);
+      assert.strictEqual(result, '{"a":1,"c":"test"}');
+    });
+
+    it("should ignore functions", () => {
+      const input = { a: 1, b: function () {}, c: "test" };
+      const result = stringify(input);
+      assert.strictEqual(result, '{"a":1,"c":"test"}');
+    });
+
+    it("should ignore symbols", () => {
+      const sym = Symbol("test");
+      const input = { a: 1, b: sym, c: "test" };
+      const result = stringify(input);
+      assert.strictEqual(result, '{"a":1,"c":"test"}');
     });
   });
 });
