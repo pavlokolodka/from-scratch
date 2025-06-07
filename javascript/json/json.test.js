@@ -343,7 +343,7 @@ describe("stringify", () => {
     it("should return an empty object for Set", () => {
       const input = new Set([1, 2, 3]);
       const result = stringify(input);
-      assert.deepStrictEqual(result, {});
+      assert.deepStrictEqual(result, "{}");
     });
 
     it("should return an empty object for Map", () => {
@@ -352,7 +352,37 @@ describe("stringify", () => {
         ["key2", "value2"],
       ]);
       const result = stringify(input);
-      assert.deepStrictEqual(result, {});
+      assert.deepStrictEqual(result, "{}");
+    });
+
+    it("should return an empty object for WeakMap", () => {
+      const input = new WeakMap();
+      const key1 = {};
+      const key2 = {};
+      input.set(key1, "value1");
+      input.set(key2, "value2");
+      const result = stringify(input);
+      assert.deepStrictEqual(result, "{}");
+    });
+
+    it("should return an empty object for WeakSet", () => {
+      const input = new WeakSet();
+      const obj1 = {};
+      const obj2 = {};
+      input.add(obj1);
+      input.add(obj2);
+      const result = stringify(input);
+      assert.deepStrictEqual(result, "{}");
+    });
+
+    it("should return an empty object for object with no enumerable properties", () => {
+      const input = Object.create(null);
+      Object.defineProperty(input, "key", {
+        value: 42,
+        enumerable: false,
+      });
+      const result = stringify(input);
+      assert.strictEqual(result, "{}");
     });
 
     it("should stringify a Date object", () => {

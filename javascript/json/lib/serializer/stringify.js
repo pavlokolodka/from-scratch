@@ -20,9 +20,6 @@ function stringify(value) {
       if (value === null) {
         return "null";
       }
-      if (value instanceof Set || value instanceof Map) {
-        return {};
-      }
       if (value instanceof Date) {
         return `"${value.toISOString()}"`;
       }
