@@ -83,6 +83,7 @@ function parse(tokens) {
     }
     return arr;
   }
+
   let tokenIndex = 0;
   return parseValue(tokens);
 }

@@ -35,10 +35,12 @@ function lexer(text) {
         if (charIndex >= text.length) {
           throw new Error("Unterminated string literal");
         }
+
         value.push(char);
         charIndex++;
         char = text[charIndex];
       }
+
       tokens.push({ type: TokenType.STRING, value: value.join("") });
       charIndex++;
       continue;
