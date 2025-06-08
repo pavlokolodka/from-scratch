@@ -43,7 +43,7 @@ function lexer(text) {
       charIndex++;
       continue;
     }
-    if (RegEx.NUMBER.test(char)) {
+    if (RegEx.NUMBER_START.test(char)) {
       checkBoolOrNull(tokens, char);
       const value = [char];
       charIndex++;
@@ -52,13 +52,19 @@ function lexer(text) {
         if (charIndex >= text.length) {
           throw new Error("Unterminated number literal");
         }
+
         value.push(char);
+        if (
+          Number.isNaN(Number(value.join(""))) &&
+          !RegEx.NUMBER.test(text[charIndex + 1])
+        ) {
+          throw new Error("Invalid number literal");
+        }
+
         charIndex++;
         char = text[charIndex];
       }
-      if (Number.isNaN(value.join(""))) {
-        throw new Error("Invalid number literal");
-      }
+
       tokens.push({ type: TokenType.NUMBER, value: Number(value.join("")) });
       RegEx.NUMBER.test(char) ? charIndex++ : null;
       continue;
@@ -208,7 +214,8 @@ const Char = {
 };
 
 const RegEx = {
-  NUMBER: /^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/,
+  NUMBER_START: /\d|-/,
+  NUMBER: /^(\d|\.|[eE])/,
   NULL: /^null/,
   TRUE: /^true/,
   FALSE: /^false/,

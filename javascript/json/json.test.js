@@ -11,10 +11,30 @@ describe("parse", () => {
         assert.strictEqual(result, "Hello, World!");
       });
 
-      it("should correctly parse a simple number", () => {
-        const jsonString = "42";
-        const result = parse(jsonString);
-        assert.strictEqual(result, 42);
+      describe("number", () => {
+        it("should correctly parse a simple number", () => {
+          const jsonString = "42";
+          const result = parse(jsonString);
+          assert.strictEqual(result, 42);
+        });
+
+        it("should correctly parse a negative number", () => {
+          const jsonString = "-42";
+          const result = parse(jsonString);
+          assert.strictEqual(result, -42);
+        });
+
+        it("should correctly parse a floating-point number", () => {
+          const jsonString = "3.14";
+          const result = parse(jsonString);
+          assert.strictEqual(result, 3.14);
+        });
+
+        it("should correctly parse a number in scientific notation", () => {
+          const jsonString = "1.23e4";
+          const result = parse(jsonString);
+          assert.strictEqual(result, 12300);
+        });
       });
 
       it("should correctly parse null", () => {
@@ -50,6 +70,13 @@ describe("parse", () => {
         const jsonString = "42abc";
         assert.throws(() => {
           parse(jsonString);
+        });
+      });
+
+      it("should throw an error for number with more that one dot", () => {
+        const jsonString = "0.4.2";
+        assert.throws(() => {
+          console.log(parse(jsonString));
         });
       });
     });
