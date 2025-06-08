@@ -1,8 +1,8 @@
-const TYPE = require("../types");
+const TokenType = require("../token-types");
 
 /**
  *
- * @param {Array<{type: string, value: any}} tokens
+ * @param {Array<{type: TokenType, value: any}} tokens
  * @returns {any}
  */
 function parse(tokens) {
@@ -12,21 +12,21 @@ function parse(tokens) {
 
   /**
    *
-   * @param {Array<{type: string, value: any}} tokens
+   * @param {Array<{type: TokenType, value: any}} tokens
    * @returns {any}
    */
   function parseValue(tokens) {
     const token = tokens[tokenIndex];
 
     switch (token.type) {
-      case TYPE.STRING:
-      case TYPE.NUMBER:
-      case TYPE.BOOLEAN:
-      case TYPE.NULL:
+      case TokenType.STRING:
+      case TokenType.NUMBER:
+      case TokenType.BOOLEAN:
+      case TokenType.NULL:
         return token.value;
-      case TYPE.OPEN_OBJECT:
+      case TokenType.OPEN_OBJECT:
         return parseObject(tokens, tokenIndex);
-      case TYPE.OPEN_ARRAY:
+      case TokenType.OPEN_ARRAY:
         return parseArray(tokens, tokenIndex);
       default:
         throw new Error(`Unexpected token type: ${token.type}`);
@@ -35,21 +35,21 @@ function parse(tokens) {
 
   /**
    *
-   * @param {Array<{type: string, value: any}} tokens
+   * @param {Array<{type: TokenType, value: any}} tokens
    * @returns {Object}
    */
   function parseObject(tokens) {
     const obj = {};
     tokenIndex++;
     let token = tokens[tokenIndex];
-    while (token.type !== TYPE.CLOSE_OBJECT) {
-      if (token.type === TYPE.STRING) {
+    while (token.type !== TokenType.CLOSE_OBJECT) {
+      if (token.type === TokenType.STRING) {
         tokenIndex++;
       }
-      if (token.type === TYPE.COMMA) {
+      if (token.type === TokenType.COMMA) {
         tokenIndex++;
       }
-      if (token.type === TYPE.COLON) {
+      if (token.type === TokenType.COLON) {
         const key = tokens[tokenIndex - 1];
         const value = parseValue(tokens, ++tokenIndex);
         obj[key.value] = value;
@@ -63,15 +63,15 @@ function parse(tokens) {
 
   /**
    *
-   * @param {Array<{type: string, value: any}} tokens
+   * @param {Array<{type: TokenType, value: any}} tokens
    * @returns {Array<any>}
    */
   function parseArray(tokens) {
     const arr = [];
     tokenIndex++;
     let token = tokens[tokenIndex];
-    while (token.type !== TYPE.CLOSE_ARRAY) {
-      if (token.type === TYPE.COMMA) {
+    while (token.type !== TokenType.CLOSE_ARRAY) {
+      if (token.type === TokenType.COMMA) {
         tokenIndex++;
       } else {
         const value = parseValue(tokens, tokenIndex);
@@ -87,4 +87,4 @@ function parse(tokens) {
   return parseValue(tokens);
 }
 
-module.exports = { parse };
+module.exports = parse;

@@ -1,5 +1,5 @@
-/** @typedef {object} TYPE */
-const TYPE = {
+/** @typedef {object} TokenType */
+const TokenType = {
   OPEN_OBJECT: "OPEN_OBJECT",
   CLOSE_OBJECT: "CLOSE_OBJECT",
   COLON: "COLON",
@@ -12,4 +12,4 @@ const TYPE = {
   BOOLEAN: "BOOLEAN",
 };
 
-module.exports = TYPE;
+module.exports = TokenType;

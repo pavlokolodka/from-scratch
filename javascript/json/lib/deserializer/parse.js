@@ -1,5 +1,5 @@
-const { lexer } = require("./lexer");
-const { parse: _parse } = require("./parser");
+const lexer = require("./lexer");
+const _parse = require("./parser");
 
 /**
  * Parses a JSON string and converts it into a JavaScript object or value.
