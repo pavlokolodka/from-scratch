@@ -51,20 +51,18 @@ function lexer(text) {
       charIndex++;
       char = text[charIndex];
       while (RegEx.NUMBER.test(char)) {
-        if (charIndex >= text.length) {
-          throw new Error("Unterminated number literal");
-        }
-
         value.push(char);
-        if (
-          Number.isNaN(Number(value.join(""))) &&
-          !RegEx.NUMBER.test(text[charIndex + 1])
-        ) {
-          throw new Error("Invalid number literal");
-        }
-
         charIndex++;
         char = text[charIndex];
+      }
+
+      if (
+        Number.isNaN(Number(value.join(""))) ||
+        (value.length > 2 &&
+          ((value[0] === "0" && value[1] !== ".") ||
+            value[value.length - 1] === "."))
+      ) {
+        throw new Error("Invalid number literal");
       }
 
       tokens.push({ type: TokenType.NUMBER, value: Number(value.join("")) });

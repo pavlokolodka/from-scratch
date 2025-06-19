@@ -59,6 +59,13 @@ describe("parse", () => {
         });
       });
 
+      it("should throw an error for an invalid number with a trailing dot", () => {
+        const jsonString = "42.";
+        assert.throws(() => {
+          parse(jsonString);
+        });
+      });
+
       it("should throw an error for a malformed null value", () => {
         const jsonString = "nll";
         assert.throws(() => {
@@ -77,6 +84,20 @@ describe("parse", () => {
         const jsonString = "0.4.2";
         assert.throws(() => {
           console.log(parse(jsonString));
+        });
+      });
+
+      it("should throw an error for a number with leading zeros", () => {
+        const jsonString = "042";
+        assert.throws(() => {
+          parse(jsonString);
+        });
+      });
+
+      it("should throw an error for a minus sign without a number", () => {
+        const jsonString = "-";
+        assert.throws(() => {
+          parse(jsonString);
         });
       });
     });
