@@ -1,0 +1,23 @@
+{
+  "name": "interpreter",
+  "version": "0.0.1",
+  "main": "",
+  "scripts": {
+    "test": "jest",
+    "typecheck": "tsc --noEmit",
+    "build": "swc src -d dist"
+  },
+  "keywords": [],
+  "author": "Pavlo Kolodka",
+  "license": "MIT",
+  "description": "",
+  "devDependencies": {
+    "@swc/cli": "^0.8.0",
+    "@swc/core": "^1.15.18",
+    "@swc/jest": "^0.2.39",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.15.3",
+    "jest": "^29.7.0",
+    "typescript": "^5.9.3"
+  }
+}
