@@ -5,13 +5,15 @@
   "scripts": {
     "test": "jest",
     "typecheck": "tsc --noEmit",
-    "build": "swc src -d dist"
+    "build": "swc src -d dist",
+    "repl": "node --watch --require @swc-node/register src/repl/repl.ts"
   },
   "keywords": [],
   "author": "Pavlo Kolodka",
   "license": "MIT",
   "description": "",
   "devDependencies": {
+    "@swc-node/register": "^1.11.1",
     "@swc/cli": "^0.8.0",
     "@swc/core": "^1.15.18",
     "@swc/jest": "^0.2.39",

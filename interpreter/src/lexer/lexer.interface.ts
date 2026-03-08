@@ -1,0 +1,49 @@
+export enum TokenType {
+  // Identifiers + literals
+  IDENT = 'IDENT',
+  NUMBER = 'NUMBER',
+  STRING = 'STRING',
+  CHARACTER = 'CHARACTER',
+
+  // Keywords
+  LET = 'let',
+  CONST = 'const',
+  IF = 'if',
+  ELIF = 'elif',
+  ELSE = 'else',
+  WHILE = 'while',
+  FN = 'fn',
+  NIL = 'nil',
+  TRUE = 'true',
+  FALSE = 'false',
+
+  // Operators
+  ASSIGN = '=',
+  PLUS = '+',
+  MINUS = '-',
+  MULTIPLY = '*',
+  DIVIDE = '/',
+  LT = '<',
+  GT = '>',
+
+  // Punctuation
+  COMMA = ',',
+  COLON = ':',
+  SEMICOLON = ';',
+  LPAREN = '(',
+  RPAREN = ')',
+  LBRACE = '{',
+  RBRACE = '}',
+  LBRACKET = '[',
+  RBRACKET = ']',
+
+  // Special
+  EOF = 'EOF',
+  ILLEGAL = 'ILLEGAL',
+}
+
+export interface Token {
+  type: TokenType;
+  literal: string;
+  line: number;
+}
