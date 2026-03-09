@@ -106,6 +106,9 @@ export class Lexer {
       case '>':
         token = this._buildToken(TokenType.GT, this._char);
         break;
+      case '"':
+        token = this._buildToken(TokenType.STRING, this._readString());
+        break;
       case '':
         token = this._buildToken(TokenType.EOF, this._char);
         break;
@@ -130,6 +133,15 @@ export class Lexer {
   private _readNumber(): string {
     const position = this._position;
     while (this._isDigit(this._char)) {
+      this._readChar();
+    }
+    return this._input.slice(position, this._position);
+  }
+
+  private _readString(): string {
+    this._readChar();
+    const position = this._position;
+    while (this._char !== '"' && this._char !== '') {
       this._readChar();
     }
     return this._input.slice(position, this._position);
