@@ -38,15 +38,30 @@ describe('Interpreter', () => {
     { input: '50 / 2 * 2 + 10', expected: 60 },
     { input: '2 + 3 * 4', expected: 14 },
     { input: '3 * 4 + 2', expected: 14 },
+    { input: '2 * (3 + 4)', expected: 14 },
+    { input: '(2 * (3 + 4))', expected: 14 },
+    { input: '((5 + 5) * 5) * 5', expected: 250 },
   ])('should evaluate infix expression $input to $expected', ({ input, expected }) => {
     const result = evaluate(input);
     expect(result).toEqual({ type: RuntimeType.NUMBER, value: expected });
   });
 
-  it('should throw error for unknown node kind', () => {
-    const unknownNode = { kind: 'UNKNOWN' } as any;
-    expect(() => interpreter.eval(unknownNode)).toThrow(
-      'AST have no implementation {"kind":"UNKNOWN"}',
-    );
+  describe('should throw an error', () => {
+    it('should throw error for unknown node kind', () => {
+      const unknownNode = { kind: 'UNKNOWN' } as any;
+      expect(() => interpreter.eval(unknownNode)).toThrow(
+        'AST have no implementation {"kind":"UNKNOWN"}',
+      );
+    });
+
+    it.each([
+      { input: '(5' },
+      { input: '(5 + 5' },
+      { input: '((5 + 5)' },
+      { input: '5 + (5 * 5' },
+      { input: '(2 * (3 + 4' },
+    ])('should throw error for missing closing parenthesis in $input', ({ input }) => {
+      expect(() => evaluate(input)).toThrow('Closing parentheses not found');
+    });
   });
 });

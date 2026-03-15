@@ -108,12 +108,33 @@ describe('Parser', () => {
       { input: '1 * 2 - 3 * 4', expected: '(- (* 1 2) (* 3 4))' },
       { input: '1 - 2 / 3 - 4', expected: '(- (- 1 (/ 2 3)) 4)' },
       { input: '1 / 2 - 3 / 4', expected: '(- (/ 1 2) (/ 3 4))' },
+
+      { input: '1 * (2 + 3)', expected: '(* 1 (+ 2 3))' },
+      { input: '(1 + 2) * 3', expected: '(* (+ 1 2) 3)' },
+      { input: '(1 * (2 + 3))', expected: '(* 1 (+ 2 3))' },
+      { input: '((1 + 2) * 3)', expected: '(* (+ 1 2) 3)' },
+      { input: '((1 + 2) * 3) * 4', expected: '(* (* (+ 1 2) 3) 4)' },
     ])('should parse infix expression $input to $expected', ({ input, expected }) => {
       const lexer = new Lexer(input);
       const parser = new Parser(lexer.tokenize());
       const program = parser.parse();
 
       expect(stringify(program)).toBe(expected);
+    });
+  });
+
+  describe('should throw error', () => {
+    it.each([
+      { input: '(5' },
+      { input: '(5 + 5' },
+      { input: '((5 + 5)' },
+      { input: '5 + (5 * 5' },
+      { input: '(2 * (3 + 4' },
+    ])('should throw error for missing closing parenthesis in $input', ({ input }) => {
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer.tokenize());
+
+      expect(() => parser.parse()).toThrow('Closing parentheses not found');
     });
   });
 });

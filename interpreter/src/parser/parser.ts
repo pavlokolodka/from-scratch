@@ -150,9 +150,25 @@ export class Parser {
         return new Identifier(this._currentToken);
       case TokenType.NUMBER:
         return new NumberLiteral(this._currentToken);
+      case TokenType.LPAREN:
+        return this._parseLParen();
       default:
         return undefined;
     }
+  }
+
+  private _parseLParen(): Expression {
+    this._nextToken();
+
+    const expr = this._parseExpression(this._lowPrecedence);
+
+    if (!this._peekTokenIs(TokenType.RPAREN)) {
+      throw new Error('Closing parentheses not found');
+    }
+
+    this._nextToken();
+
+    return expr;
   }
 
   private _getInfix(left: Expression): Expression | undefined {
@@ -187,7 +203,7 @@ export class Parser {
       case TokenType.DIVIDE:
         return 2;
       default:
-        return 0;
+        return this._lowPrecedence;
     }
   }
 
