@@ -1,5 +1,6 @@
 import type {
   AssignStatement,
+  BlockStatement,
   ConstStatement,
   ExpressionStatement,
   Identifier,
@@ -8,9 +9,9 @@ import type {
   Node,
   NumberLiteral,
 } from '../parser/ast';
-import type { Environment } from './environment';
 import type { RuntimeValue } from './interpreter.interface';
 import { NodeKind, NumberOperator } from '../parser/ast';
+import { Environment } from './environment';
 import { RuntimeType } from './interpreter.interface';
 import { IdentifierValue, IdentifierValueInternal } from './values/identifier.value';
 import { NumberValue } from './values/number.value';
@@ -32,9 +33,22 @@ export class Interpreter {
         return this._evalInfix(ast as InfixExpression, env);
       case NodeKind.EXPRESSION_STATEMENT:
         return this.eval((ast as ExpressionStatement).expression, env);
+      case NodeKind.BLOCK_STATEMENT:
+        return this._evalBlockStmt(ast as BlockStatement, env);
       default:
         throw new Error(`AST have no implementation ${JSON.stringify(ast)}`);
     }
+  }
+
+  private _evalBlockStmt(stmt: BlockStatement, env: Environment): RuntimeValue {
+    const localEnv = new Environment(env);
+    const localStatements = stmt.statements;
+
+    for (const lstmt of localStatements) {
+      this.eval(lstmt, localEnv);
+    }
+
+    return VoidValue;
   }
 
   private _evalDeclareStmt(stmt: LetStatement | ConstStatement, env: Environment): RuntimeValue {

@@ -3,6 +3,7 @@ import type { Expression, Statement } from './ast';
 import { TokenType } from '../lexer/lexer.interface';
 import {
   AssignStatement,
+  BlockStatement,
   ConstStatement,
   ExpressionStatement,
   Identifier,
@@ -61,6 +62,8 @@ export class Parser {
         return this._parseLetStatement();
       case TokenType.CONST:
         return this._parseConstStatement();
+      case TokenType.LBRACE:
+        return this._parseBlockStatement();
       case TokenType.IDENT:
         if (this._peekTokenIs(TokenType.ASSIGN)) {
           return this._parseAssignStatement();
@@ -69,6 +72,26 @@ export class Parser {
       default:
         return this._parseExpressionStatement();
     }
+  }
+
+  private _parseBlockStatement(): BlockStatement | null {
+    const token = this._currentToken;
+    const statements: Statement[] = [];
+
+    while (!this._peekTokenIs(TokenType.RBRACE)) {
+      this._nextToken();
+
+      const stm = this._parseStatement();
+      if (stm === null) {
+        throw new Error('Closing parentheses not found');
+      }
+
+      statements.push(stm);
+    }
+
+    this._nextToken();
+
+    return new BlockStatement(token, statements);
   }
 
   private _parseLetStatement(): LetStatement | null {
@@ -95,7 +118,7 @@ export class Parser {
     return new LetStatement(token, identifier, value);
   }
 
-  private _parseConstStatement(): LetStatement | null {
+  private _parseConstStatement(): ConstStatement | null {
     const token = this._currentToken;
 
     if (!this._expectPeek(TokenType.IDENT)) {

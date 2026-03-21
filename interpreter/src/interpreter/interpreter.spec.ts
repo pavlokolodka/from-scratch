@@ -109,6 +109,32 @@ describe('Interpreter', () => {
     });
   });
 
+  describe('block statements', () => {
+    it('should evaluate a block and return void', () => {
+      const result = evaluate('{}');
+      expect(result).toEqual({ type: RuntimeType.VOID, value: null });
+    });
+
+    it('should create an inner scope — variables do not leak out', () => {
+      expect(() => evaluateAll('{ let x = 5 }\nx')).toThrow();
+    });
+
+    it('should access outer scope variables from inside block', () => {
+      const result = evaluateAll('let x = 10\n{ x }');
+      expect(result).toEqual({ type: RuntimeType.VOID, value: null });
+    });
+
+    it('should shadow outer variable inside block without mutating it', () => {
+      const result = evaluateAll('let x = 1\n{ let x = 99 }\nx');
+      expect(result).toEqual({ type: RuntimeType.NUMBER, value: 1 });
+    });
+
+    it('should mutate outer variable from inside block', () => {
+      const result = evaluateAll('let x = 1\n{ x = 2 }\nx');
+      expect(result).toEqual({ type: RuntimeType.NUMBER, value: 2 });
+    });
+  });
+
   describe('should throw an error', () => {
     it('should throw error for unknown node kind', () => {
       const unknownNode = { kind: 'UNKNOWN' } as any;

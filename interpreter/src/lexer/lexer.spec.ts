@@ -153,6 +153,49 @@ describe('Lexer', () => {
     });
   });
 
+  describe('block', () => {
+    it('should tokenize an empty block', () => {
+      const input = `{}`;
+      const tests = [
+        { type: TokenType.LBRACE, literal: '{', line: 1 },
+        { type: TokenType.RBRACE, literal: '}', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+
+    it('should tokenize a block with statements', () => {
+      const input = `{\n  let x = 5\n  x\n}`;
+      const tests = [
+        { type: TokenType.LBRACE, literal: '{', line: 1 },
+        { type: TokenType.LET, literal: 'let', line: 2 },
+        { type: TokenType.IDENT, literal: 'x', line: 2 },
+        { type: TokenType.ASSIGN, literal: '=', line: 2 },
+        { type: TokenType.NUMBER, literal: '5', line: 2 },
+        { type: TokenType.IDENT, literal: 'x', line: 3 },
+        { type: TokenType.RBRACE, literal: '}', line: 4 },
+        { type: TokenType.EOF, literal: '', line: 4 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+  });
+
   describe('boolean literals', () => {
     it('should tokenize true and false', () => {
       const input = `true false`;

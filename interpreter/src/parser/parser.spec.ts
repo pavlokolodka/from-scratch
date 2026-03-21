@@ -1,5 +1,6 @@
 import type {
   AssignStatement,
+  BlockStatement,
   ExpressionStatement,
   Identifier,
   InfixExpression,
@@ -35,6 +36,10 @@ function stringify(node: Node): string {
     case NodeKind.CONST_STATEMENT: {
       const constStmt = node as ConstStatement;
       return `(const ${constStmt.left.value} ${stringify(constStmt.right)})`;
+    }
+    case NodeKind.BLOCK_STATEMENT: {
+      const block = node as BlockStatement;
+      return `(block ${block.statements.map(stringify).join(' ')})`;
     }
     default:
       return '';
@@ -177,6 +182,28 @@ describe('Parser', () => {
       const program = parser.parse();
 
       expect(stringify(program)).toBe(expected);
+    });
+  });
+
+  describe('block statements', () => {
+    it.each([
+      { input: '{}', expected: '(block )' },
+      { input: '{ 5 }', expected: '(block 5)' },
+      { input: '{ let x = 5 }', expected: '(block (let x 5))' },
+      { input: '{ let x = 5\nx }', expected: '(block (let x 5) x)' },
+      { input: '{ let x = 1\nlet y = 2\nx + y }', expected: '(block (let x 1) (let y 2) (+ x y))' },
+    ])('should parse block statement $input to $expected', ({ input, expected }) => {
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer.tokenize());
+      const program = parser.parse();
+
+      expect(stringify(program)).toBe(expected);
+    });
+
+    it('should throw for unclosed block', () => {
+      const lexer = new Lexer('{ let x = 5');
+      const parser = new Parser(lexer.tokenize());
+      expect(() => parser.parse()).toThrow();
     });
   });
 
