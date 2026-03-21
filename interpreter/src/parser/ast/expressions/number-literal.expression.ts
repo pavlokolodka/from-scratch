@@ -10,10 +10,10 @@ export enum NumberOperator {
 }
 
 export class NumberLiteral implements Expression {
-  kind = NodeKind.NUMBER_LITERAL;
-  public value: number;
+  readonly kind = NodeKind.NUMBER_LITERAL;
+  readonly value: number;
 
-  constructor(public token: Token) {
+  constructor(public readonly token: Token) {
     this.value = Number(token.literal);
   }
 

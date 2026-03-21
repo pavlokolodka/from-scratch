@@ -3,10 +3,10 @@ import type { Expression, Statement } from '../ast.interface';
 import { NodeKind } from '../ast.interface';
 
 export class ExpressionStatement implements Statement {
-  kind = NodeKind.EXPRESSION_STATEMENT;
+  readonly kind = NodeKind.EXPRESSION_STATEMENT;
   constructor(
-    public token: Token,
-    public expression: Expression,
+    public readonly token: Token,
+    public readonly expression: Expression,
   ) {}
 
   tokenLiteral(): string {

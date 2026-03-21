@@ -4,11 +4,11 @@ import type { Identifier } from '../expressions';
 import { NodeKind } from '../ast.interface';
 
 export class AssignStatement implements Statement {
-  kind = NodeKind.ASSIGN_STATEMENT;
+  readonly kind = NodeKind.ASSIGN_STATEMENT;
   constructor(
-    public token: Token,
-    public left: Identifier,
-    public right: Expression,
+    public readonly token: Token,
+    public readonly left: Identifier,
+    public readonly right: Expression,
   ) {}
 
   tokenLiteral(): string {

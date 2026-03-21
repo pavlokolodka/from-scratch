@@ -3,10 +3,10 @@ import type { Expression } from '../ast.interface';
 import { NodeKind } from '../ast.interface';
 
 export class Identifier implements Expression {
-  kind = NodeKind.IDENTIFIER;
-  public value: string;
+  readonly kind = NodeKind.IDENTIFIER;
+  readonly value: string;
 
-  constructor(public token: Token) {
+  constructor(public readonly token: Token) {
     this.value = token.literal;
   }
 

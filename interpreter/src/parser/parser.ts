@@ -3,6 +3,7 @@ import type { Expression, Statement } from './ast';
 import { TokenType } from '../lexer/lexer.interface';
 import {
   AssignStatement,
+  ConstStatement,
   ExpressionStatement,
   Identifier,
   InfixExpression,
@@ -58,6 +59,8 @@ export class Parser {
     switch (this._currentToken.type) {
       case TokenType.LET:
         return this._parseLetStatement();
+      case TokenType.CONST:
+        return this._parseConstStatement();
       case TokenType.IDENT:
         if (this._peekTokenIs(TokenType.ASSIGN)) {
           return this._parseAssignStatement();
@@ -90,6 +93,30 @@ export class Parser {
     }
 
     return new LetStatement(token, identifier, value);
+  }
+
+  private _parseConstStatement(): LetStatement | null {
+    const token = this._currentToken;
+
+    if (!this._expectPeek(TokenType.IDENT)) {
+      return null;
+    }
+
+    const identifier = new Identifier(this._currentToken);
+
+    if (!this._expectPeek(TokenType.ASSIGN)) {
+      return null;
+    }
+
+    this._nextToken();
+
+    const value = this._parseExpression(this._lowPrecedence);
+
+    if (this._peekTokenIs(TokenType.SEMICOLON)) {
+      this._nextToken();
+    }
+
+    return new ConstStatement(token, identifier, value);
   }
 
   private _parseExpressionStatement(): ExpressionStatement {

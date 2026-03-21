@@ -3,13 +3,13 @@ import type { Expression } from '../ast.interface';
 import { NodeKind } from '../ast.interface';
 
 export class InfixExpression implements Expression {
-  kind = NodeKind.INFIX_EXPRESSION;
-  public operator: string;
+  readonly kind = NodeKind.INFIX_EXPRESSION;
+  readonly operator: string;
 
   constructor(
-    public token: Token,
-    public left: Expression,
-    public right: Expression,
+    public readonly token: Token,
+    public readonly left: Expression,
+    public readonly right: Expression,
   ) {
     this.operator = token.literal;
   }

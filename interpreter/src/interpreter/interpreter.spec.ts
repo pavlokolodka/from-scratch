@@ -77,6 +77,22 @@ describe('Interpreter', () => {
     });
   });
 
+  describe('const declaration', () => {
+    it.each([
+      { input: 'const x = 5\nx', expected: 5 },
+      { input: 'const result = 10\nresult', expected: 10 },
+      { input: 'const a = 2 + 3\na', expected: 5 },
+      { input: 'const a = 5\nconst b = 10\nb', expected: 10 },
+    ])('should declare and look up $input', ({ input, expected }) => {
+      const result = evaluateAll(input);
+      expect(result).toEqual({ type: RuntimeType.NUMBER, value: expected });
+    });
+
+    it('should throw when reassigning a const variable', () => {
+      expect(() => evaluateAll('const x = 5\nx = 10')).toThrow();
+    });
+  });
+
   describe('reassignment', () => {
     it.each([
       { input: 'let x = 5\nx = 10\nx', expected: 10 },

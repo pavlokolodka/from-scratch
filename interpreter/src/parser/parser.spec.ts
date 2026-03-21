@@ -7,7 +7,7 @@ import type {
   Program,
 } from './ast';
 import { Lexer } from '../lexer/lexer';
-import { LetStatement, NodeKind, NumberLiteral } from './ast';
+import { ConstStatement, LetStatement, NodeKind, NumberLiteral } from './ast';
 import { Parser } from './parser';
 
 function stringify(node: Node): string {
@@ -31,6 +31,10 @@ function stringify(node: Node): string {
     case NodeKind.LET_STATEMENT: {
       const letStmt = node as LetStatement;
       return `(let ${letStmt.left.value} ${stringify(letStmt.right)})`;
+    }
+    case NodeKind.CONST_STATEMENT: {
+      const constStmt = node as ConstStatement;
+      return `(const ${constStmt.left.value} ${stringify(constStmt.right)})`;
     }
     default:
       return '';
@@ -61,6 +65,56 @@ describe('Parser', () => {
       const val = letStmt.right as NumberLiteral;
       expect(val.value).toBe(value);
       expect(val.tokenLiteral()).toBe(String(value));
+    });
+
+    it.each([
+      { input: 'let x = 5;', expected: '(let x 5)' },
+      { input: 'let result = 2 + 3;', expected: '(let result (+ 2 3))' },
+      { input: 'let z = x * y;', expected: '(let z (* x y))' },
+    ])('should stringify let statement $input to $expected', ({ input, expected }) => {
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer.tokenize());
+      const program = parser.parse();
+
+      expect(stringify(program)).toBe(expected);
+    });
+  });
+
+  describe('const statements', () => {
+    it.each([
+      { input: 'const x = 5;', name: 'x', value: 5 },
+      { input: 'const y = 10;', name: 'y', value: 10 },
+      { input: 'const foobar = 838383;', name: 'foobar', value: 838383 },
+    ])('should parse const statement $input', ({ input, name, value }) => {
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer.tokenize());
+      const program = parser.parse();
+
+      expect(program.statements.length).toBe(1);
+      const stmt = program.statements[0];
+      expect(stmt.tokenLiteral()).toBe('const');
+      expect(stmt instanceof ConstStatement).toBe(true);
+
+      const constStmt = stmt as ConstStatement;
+      expect(constStmt.left.value).toBe(name);
+      expect(constStmt.left.tokenLiteral()).toBe(name);
+
+      expect(constStmt.right instanceof NumberLiteral).toBe(true);
+      const val = constStmt.right as NumberLiteral;
+      expect(val.value).toBe(value);
+      expect(val.tokenLiteral()).toBe(String(value));
+    });
+
+    it.each([
+      { input: 'const x = 5;', expected: '(const x 5)' },
+      { input: 'const result = 2 + 3;', expected: '(const result (+ 2 3))' },
+      { input: 'const z = x * y;', expected: '(const z (* x y))' },
+    ])('should stringify const statement $input to $expected', ({ input, expected }) => {
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer.tokenize());
+      const program = parser.parse();
+
+      expect(stringify(program)).toBe(expected);
     });
   });
 

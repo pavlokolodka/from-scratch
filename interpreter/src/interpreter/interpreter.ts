@@ -1,5 +1,6 @@
 import type {
   AssignStatement,
+  ConstStatement,
   ExpressionStatement,
   Identifier,
   InfixExpression,
@@ -11,6 +12,7 @@ import type { Environment } from './environment';
 import type { RuntimeValue } from './interpreter.interface';
 import { NodeKind, NumberOperator } from '../parser/ast';
 import { RuntimeType } from './interpreter.interface';
+import { IdentifierValue, IdentifierValueInternal } from './values/identifier.value';
 import { NumberValue } from './values/number.value';
 import { VoidValue } from './values/void.value';
 
@@ -20,7 +22,8 @@ export class Interpreter {
       case NodeKind.NUMBER_LITERAL:
         return new NumberValue((ast as NumberLiteral).value);
       case NodeKind.LET_STATEMENT:
-        return this._evalLetStmt(ast as LetStatement, env);
+      case NodeKind.CONST_STATEMENT:
+        return this._evalDeclareStmt(ast as LetStatement, env);
       case NodeKind.ASSIGN_STATEMENT:
         return this._evalAssignStmt(ast as AssignStatement, env);
       case NodeKind.IDENTIFIER:
@@ -34,8 +37,8 @@ export class Interpreter {
     }
   }
 
-  private _evalLetStmt(stmt: LetStatement, env: Environment): RuntimeValue {
-    const identifier = stmt.left.value;
+  private _evalDeclareStmt(stmt: LetStatement | ConstStatement, env: Environment): RuntimeValue {
+    const identifier = new IdentifierValue(stmt.left.value, stmt.kind);
     const value = this.eval(stmt.right, env);
 
     env.declare(identifier, value);
@@ -44,8 +47,14 @@ export class Interpreter {
   }
 
   private _evalAssignStmt(stmt: AssignStatement, env: Environment): RuntimeValue {
-    const identifier = stmt.left.value;
+    const identifier = new IdentifierValueInternal(stmt.left.value);
     const value = this.eval(stmt.right, env);
+
+    const meta = env.checkMeta(identifier);
+
+    if (meta && meta.kind === NodeKind.CONST_STATEMENT) {
+      throw new Error(`Error: assignment to constant variable`);
+    }
 
     env.assign(identifier, value);
 
@@ -53,7 +62,8 @@ export class Interpreter {
   }
 
   private _evalIdentifier(node: Identifier, env: Environment): RuntimeValue {
-    return env.lookup(node.value);
+    const identifier = new IdentifierValueInternal(node.value);
+    return env.lookup(identifier);
   }
 
   private _evalInfix(exp: InfixExpression, env: Environment): RuntimeValue {
