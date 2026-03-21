@@ -1,5 +1,6 @@
 import { Lexer } from '../lexer/lexer';
 import { Parser } from '../parser/parser';
+import { Environment } from './environment';
 import { Interpreter } from './interpreter';
 import { RuntimeType } from './interpreter.interface';
 
@@ -13,11 +14,25 @@ describe('Interpreter', () => {
   function evaluate(input: string) {
     const lexer = new Lexer(input);
     const parser = new Parser(lexer.tokenize());
+    const env = new Environment();
     const program = parser.parse();
 
     const stmt = program.statements[0];
 
-    return interpreter.eval(stmt);
+    return interpreter.eval(stmt, env);
+  }
+
+  function evaluateAll(input: string) {
+    const lexer = new Lexer(input);
+    const parser = new Parser(lexer.tokenize());
+    const env = new Environment();
+    const program = parser.parse();
+
+    let result: ReturnType<typeof interpreter.eval>;
+    for (const stmt of program.statements) {
+      result = interpreter.eval(stmt, env);
+    }
+    return result!;
   }
 
   it.each([
@@ -46,10 +61,43 @@ describe('Interpreter', () => {
     expect(result).toEqual({ type: RuntimeType.NUMBER, value: expected });
   });
 
+  describe('let declaration', () => {
+    it.each([
+      { input: 'let x = 5\nx', expected: 5 },
+      { input: 'let result = 10\nresult', expected: 10 },
+      { input: 'let a = 2 + 3\na', expected: 5 },
+      { input: 'let a = 5\nlet b = 10\nb', expected: 10 },
+    ])('should declare and look up $input', ({ input, expected }) => {
+      const result = evaluateAll(input);
+      expect(result).toEqual({ type: RuntimeType.NUMBER, value: expected });
+    });
+
+    it('should throw when looking up an undeclared variable', () => {
+      expect(() => evaluate('x')).toThrow();
+    });
+  });
+
+  describe('reassignment', () => {
+    it.each([
+      { input: 'let x = 5\nx = 10\nx', expected: 10 },
+      { input: 'let x = 1\nx = x + 1\nx', expected: 2 },
+      { input: 'let a = 5\nlet b = 10\na = b\na', expected: 10 },
+      { input: 'let x = 2\nx = x * 3\nx', expected: 6 },
+    ])('should reassign and look up $input', ({ input, expected }) => {
+      const result = evaluateAll(input);
+      expect(result).toEqual({ type: RuntimeType.NUMBER, value: expected });
+    });
+
+    it('should throw when assigning to an undeclared variable', () => {
+      expect(() => evaluateAll('x = 5')).toThrow();
+    });
+  });
+
   describe('should throw an error', () => {
     it('should throw error for unknown node kind', () => {
       const unknownNode = { kind: 'UNKNOWN' } as any;
-      expect(() => interpreter.eval(unknownNode)).toThrow(
+      const env = new Environment();
+      expect(() => interpreter.eval(unknownNode, env)).toThrow(
         'AST have no implementation {"kind":"UNKNOWN"}',
       );
     });

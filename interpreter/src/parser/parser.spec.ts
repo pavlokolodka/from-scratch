@@ -69,6 +69,9 @@ describe('Parser', () => {
       { input: 'x = 5;', expected: '(= x 5)' },
       { input: 'y = 10 + 5;', expected: '(= y (+ 10 5))' },
       { input: 'foobar = x * y;', expected: '(= foobar (* x y))' },
+      { input: 'x = y;', expected: '(= x y)' },
+      { input: 'x = x + 1;', expected: '(= x (+ x 1))' },
+      { input: 'a = b * c + d;', expected: '(= a (+ (* b c) d))' },
     ])('should parse assign statement $input to $expected', ({ input, expected }) => {
       const lexer = new Lexer(input);
       const parser = new Parser(lexer.tokenize());
@@ -115,6 +118,22 @@ describe('Parser', () => {
       { input: '((1 + 2) * 3)', expected: '(* (+ 1 2) 3)' },
       { input: '((1 + 2) * 3) * 4', expected: '(* (* (+ 1 2) 3) 4)' },
     ])('should parse infix expression $input to $expected', ({ input, expected }) => {
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer.tokenize());
+      const program = parser.parse();
+
+      expect(stringify(program)).toBe(expected);
+    });
+  });
+
+  describe('identifier expressions', () => {
+    it.each([
+      { input: 'a;', expected: 'a' },
+      { input: 'b;', expected: 'b' },
+      { input: 'foobar;', expected: 'foobar' },
+      { input: 'a + b;', expected: '(+ a b)' },
+      { input: 'x * y + z;', expected: '(+ (* x y) z)' },
+    ])('should parse identifier expression $input to $expected', ({ input, expected }) => {
       const lexer = new Lexer(input);
       const parser = new Parser(lexer.tokenize());
       const program = parser.parse();
