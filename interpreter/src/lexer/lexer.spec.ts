@@ -298,6 +298,95 @@ describe('Lexer', () => {
     });
   });
 
+  describe('fn invocation', () => {
+    it('should tokenize a call with no arguments', () => {
+      const input = `greet()`;
+      const tests = [
+        { type: TokenType.IDENT, literal: 'greet', line: 1 },
+        { type: TokenType.LPAREN, literal: '(', line: 1 },
+        { type: TokenType.RPAREN, literal: ')', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+
+    it('should tokenize a call with one argument', () => {
+      const input = `double(5)`;
+      const tests = [
+        { type: TokenType.IDENT, literal: 'double', line: 1 },
+        { type: TokenType.LPAREN, literal: '(', line: 1 },
+        { type: TokenType.NUMBER, literal: '5', line: 1 },
+        { type: TokenType.RPAREN, literal: ')', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+
+    it('should tokenize a call with multiple arguments', () => {
+      const input = `add(a, b)`;
+      const tests = [
+        { type: TokenType.IDENT, literal: 'add', line: 1 },
+        { type: TokenType.LPAREN, literal: '(', line: 1 },
+        { type: TokenType.IDENT, literal: 'a', line: 1 },
+        { type: TokenType.COMMA, literal: ',', line: 1 },
+        { type: TokenType.IDENT, literal: 'b', line: 1 },
+        { type: TokenType.RPAREN, literal: ')', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+
+    it('should tokenize a call with expression arguments', () => {
+      const input = `add(1 + 2, 3 * 4)`;
+      const tests = [
+        { type: TokenType.IDENT, literal: 'add', line: 1 },
+        { type: TokenType.LPAREN, literal: '(', line: 1 },
+        { type: TokenType.NUMBER, literal: '1', line: 1 },
+        { type: TokenType.PLUS, literal: '+', line: 1 },
+        { type: TokenType.NUMBER, literal: '2', line: 1 },
+        { type: TokenType.COMMA, literal: ',', line: 1 },
+        { type: TokenType.NUMBER, literal: '3', line: 1 },
+        { type: TokenType.MULTIPLY, literal: '*', line: 1 },
+        { type: TokenType.NUMBER, literal: '4', line: 1 },
+        { type: TokenType.RPAREN, literal: ')', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+  });
+
   it('should tokenize illegal tokens', () => {
     const input = `@ # $`;
     const tests = [

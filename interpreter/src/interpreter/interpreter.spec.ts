@@ -184,4 +184,54 @@ describe('Interpreter', () => {
       });
     });
   });
+
+  describe('function call', () => {
+    it.each([
+      { input: 'fn double(x) { x * 2 }\ndouble(5)', expected: 10 },
+      { input: 'fn add(a, b) { a + b }\nadd(3, 4)', expected: 7 },
+      { input: 'fn sum(a, b, c) { a + b + c }\nsum(1, 2, 3)', expected: 6 },
+      { input: 'fn square(x) { x * x }\nsquare(4)', expected: 16 },
+      { input: 'fn add(a, b) { a + b }\nadd(1 + 1, 3)', expected: 5 },
+    ])('should call function and return result for $input', ({ input, expected }) => {
+      const result = evaluateAll(input);
+      expect(result).toEqual({ type: RuntimeType.NUMBER, value: expected });
+    });
+
+    it('should return void when function body is empty', () => {
+      const result = evaluateAll('fn greet() {}\ngreet()');
+      expect(result).toEqual({ type: RuntimeType.VOID, value: null });
+    });
+
+    it('should not leak function parameters into outer scope', () => {
+      expect(() => evaluateAll('fn add(a, b) { a + b }\nadd(1, 2)\na')).toThrow();
+    });
+
+    it('should throw when calling an undeclared function', () => {
+      expect(() => evaluateAll('unknown()')).toThrow();
+    });
+
+    it('should throw when calling a non-function value', () => {
+      expect(() => evaluateAll('let x = 5\nx()')).toThrow();
+    });
+
+    it('should throw when called with too few arguments', () => {
+      expect(() => evaluateAll('fn add(a, b) { a + b }\nadd(1)')).toThrow();
+    });
+
+    it('should throw when called with too many arguments', () => {
+      expect(() => evaluateAll('fn double(x) { x * 2 }\ndouble(1, 2)')).toThrow();
+    });
+
+    it('should support chained calls', () => {
+      const input = 'fn add(a, b) { a + b }\nlet x = add(1, 2)\nadd(x, 4)';
+      const result = evaluateAll(input);
+      expect(result).toEqual({ type: RuntimeType.NUMBER, value: 7 });
+    });
+
+    it('should close over outer scope variables', () => {
+      const input = 'let n = 10\nfn addN(x) { x + n }\naddN(5)';
+      const result = evaluateAll(input);
+      expect(result).toEqual({ type: RuntimeType.NUMBER, value: 15 });
+    });
+  });
 });

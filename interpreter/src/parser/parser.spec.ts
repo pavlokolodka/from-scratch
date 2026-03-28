@@ -1,6 +1,7 @@
 import type {
   AssignStatement,
   BlockStatement,
+  CallExpression,
   ExpressionStatement,
   Identifier,
   InfixExpression,
@@ -45,6 +46,11 @@ function stringify(node: Node): string {
       const fn = node as FunctionDeclaration;
       const params = fn.parameters.map((p) => p.value).join(' ');
       return `(fn ${fn.name.value} (${params}) ${stringify(fn.body)})`;
+    }
+    case NodeKind.CALL_EXPRESSION: {
+      const call = node as CallExpression;
+      const args = call.args.map(stringify).join(' ');
+      return `(call ${call.identifier.value} (${args}))`;
     }
     default:
       return '';
@@ -337,6 +343,57 @@ describe('Parser', () => {
     it.each([
       { input: 'fn add(123) {}', desc: 'number literal as parameter' },
       { input: 'fn add(a + b) {}', desc: 'expression as parameter' },
+    ])('should throw for $desc: $input', ({ input }) => {
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer.tokenize());
+      expect(() => parser.parse()).toThrow();
+    });
+  });
+
+  describe('function call expressions', () => {
+    it.each([
+      { input: 'greet()', expected: '(call greet ())' },
+      { input: 'double(5)', expected: '(call double (5))' },
+      { input: 'add(1, 2)', expected: '(call add (1 2))' },
+      { input: 'sum(1, 2, 3)', expected: '(call sum (1 2 3))' },
+      { input: 'add(a, b)', expected: '(call add (a b))' },
+      { input: 'add(1 + 2, 3)', expected: '(call add ((+ 1 2) 3))' },
+      { input: 'add(x * 2, y)', expected: '(call add ((* x 2) y))' },
+    ])('should parse call expression $input to $expected', ({ input, expected }) => {
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer.tokenize());
+      const program = parser.parse();
+
+      expect(stringify(program)).toBe(expected);
+    });
+
+    it('should parse call expression AST node fields', () => {
+      const lexer = new Lexer('add(1, 2)');
+      const parser = new Parser(lexer.tokenize());
+      const program = parser.parse();
+
+      expect(program.statements.length).toBe(1);
+      const stmt = program.statements[0] as ExpressionStatement;
+      const call = stmt.expression as CallExpression;
+
+      expect(call.kind).toBe(NodeKind.CALL_EXPRESSION);
+      expect(call.identifier.value).toBe('add');
+      expect(call.args).toHaveLength(2);
+    });
+
+    it.each([
+      { input: 'add(1,)', desc: 'trailing comma in args' },
+      { input: 'add(,1)', desc: 'leading comma in args' },
+      { input: 'add(1,,2)', desc: 'double comma in args' },
+    ])('should throw for $desc: $input', ({ input }) => {
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer.tokenize());
+      expect(() => parser.parse()).toThrow();
+    });
+
+    it.each([
+      { input: 'add(1, 2', desc: 'unclosed arg list, EOF' },
+      { input: 'add(', desc: 'only opening paren, EOF' },
     ])('should throw for $desc: $input', ({ input }) => {
       const lexer = new Lexer(input);
       const parser = new Parser(lexer.tokenize());

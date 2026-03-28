@@ -4,6 +4,7 @@ import { TokenType } from '../lexer/lexer.interface';
 import {
   AssignStatement,
   BlockStatement,
+  CallExpression,
   ConstStatement,
   ExpressionStatement,
   FunctionDeclaration,
@@ -13,6 +14,7 @@ import {
   NumberLiteral,
   Program,
 } from './ast';
+import assert from 'node:assert';
 
 export class Parser {
   private _tokens: Token[] = [];
@@ -244,7 +246,7 @@ export class Parser {
     return leftExp;
   }
 
-  private _getPrefix(): Expression | undefined {
+  private _getPrefix(): Expression | null {
     switch (this._currentToken.type) {
       case TokenType.IDENT:
         return new Identifier(this._currentToken);
@@ -253,7 +255,7 @@ export class Parser {
       case TokenType.LPAREN:
         return this._parseLParen();
       default:
-        return undefined;
+        return null;
     }
   }
 
@@ -271,16 +273,63 @@ export class Parser {
     return expr;
   }
 
-  private _getInfix(left: Expression): Expression | undefined {
+  private _getInfix(left: Expression): Expression | null {
     switch (this._currentToken.type) {
       case TokenType.PLUS:
       case TokenType.MINUS:
       case TokenType.MULTIPLY:
       case TokenType.DIVIDE:
         return this._parseInfixExpression(left);
+      case TokenType.LPAREN:
+        return this._parseCallExpression(left);
       default:
-        return undefined;
+        return null;
     }
+  }
+
+  private _parseCallExpression(left: Expression): CallExpression {
+    assert.ok(left instanceof Identifier, `Expected function name, got ${left.kind}`);
+
+    const token = this._currentToken;
+    const args: Expression[] = [];
+
+    if (this._expectPeek(TokenType.RPAREN)) {
+      return new CallExpression(token, left, args);
+    }
+
+    this._nextToken();
+
+    if (this._currTokenIs(TokenType.COMMA)) {
+      throw new Error(`Expected argument expression, got ','`);
+    }
+    if (this._currTokenIs(TokenType.EOF)) {
+      throw new Error("Unclosed argument list: expected ')'");
+    }
+
+    args.push(this._parseExpression(this._lowPrecedence));
+
+    while (this._peekTokenIs(TokenType.COMMA)) {
+      this._nextToken();
+      this._nextToken();
+
+      if (this._currTokenIs(TokenType.RPAREN)) {
+        throw new Error(`Expected argument expression after ',', got ')'`);
+      }
+      if (this._currTokenIs(TokenType.EOF)) {
+        throw new Error("Unclosed argument list: expected ')'");
+      }
+      if (this._currTokenIs(TokenType.COMMA)) {
+        throw new Error(`Expected argument expression, got ','`);
+      }
+
+      args.push(this._parseExpression(this._lowPrecedence));
+    }
+
+    if (!this._expectPeek(TokenType.RPAREN)) {
+      throw new Error("Unclosed argument list: expected ')'");
+    }
+
+    return new CallExpression(token, left, args);
   }
 
   private _parseInfixExpression(left: Expression): Expression {
@@ -296,6 +345,8 @@ export class Parser {
 
   private _getPrecedence(token: Token): number {
     switch (token.type) {
+      case TokenType.LPAREN:
+        return 3;
       case TokenType.MINUS:
       case TokenType.PLUS:
         return 1;
