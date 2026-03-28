@@ -6,6 +6,7 @@ import {
   BlockStatement,
   ConstStatement,
   ExpressionStatement,
+  FunctionDeclaration,
   Identifier,
   InfixExpression,
   LetStatement,
@@ -64,6 +65,8 @@ export class Parser {
         return this._parseConstStatement();
       case TokenType.LBRACE:
         return this._parseBlockStatement();
+      case TokenType.FUNCTION:
+        return this._parseFunctionStatement();
       case TokenType.IDENT:
         if (this._peekTokenIs(TokenType.ASSIGN)) {
           return this._parseAssignStatement();
@@ -72,6 +75,53 @@ export class Parser {
       default:
         return this._parseExpressionStatement();
     }
+  }
+
+  private _parseFunctionStatement(): FunctionDeclaration | null {
+    const token = this._currentToken;
+
+    if (!this._expectPeek(TokenType.IDENT)) {
+      throw new Error('Function declaration require a function name');
+    }
+
+    const ident = new Identifier(this._currentToken);
+
+    if (!this._expectPeek(TokenType.LPAREN)) {
+      throw new Error(`Unexpected token ${this._currentToken}`);
+    }
+
+    if (!this._expectPeek(TokenType.IDENT) && !this._expectPeek(TokenType.RPAREN)) {
+      throw new Error(`Unexpected token ${this._currentToken}`);
+    }
+
+    const parameters: Identifier[] = [];
+
+    while (!this._currTokenIs(TokenType.RPAREN)) {
+      parameters.push(new Identifier(this._currentToken));
+
+      if (this._expectPeek(TokenType.COMMA)) {
+        if (!this._expectPeek(TokenType.IDENT)) {
+          throw new Error(`Expected parameter name after ',', got ${this._currentToken}`);
+        }
+        continue;
+      }
+
+      if (!this._expectPeek(TokenType.IDENT) && !this._expectPeek(TokenType.RPAREN)) {
+        throw new Error(`Unexpected token ${this._currentToken}`);
+      }
+    }
+
+    if (!this._expectPeek(TokenType.LBRACE)) {
+      throw new Error(`Unexpected token ${this._currentToken}`);
+    }
+
+    const body = this._parseBlockStatement();
+
+    if (!body) {
+      throw new Error(`Unexpected empty body`);
+    }
+
+    return new FunctionDeclaration(token, ident, parameters, body);
   }
 
   private _parseBlockStatement(): BlockStatement | null {
@@ -255,6 +305,10 @@ export class Parser {
       default:
         return this._lowPrecedence;
     }
+  }
+
+  private _currTokenIs(t: TokenType): boolean {
+    return this._currentToken.type === t;
   }
 
   private _peekTokenIs(t: TokenType): boolean {

@@ -25,7 +25,7 @@ describe('Lexer', () => {
       { type: TokenType.ELIF, literal: 'elif', line: 1 },
       { type: TokenType.ELSE, literal: 'else', line: 1 },
       { type: TokenType.WHILE, literal: 'while', line: 1 },
-      { type: TokenType.FN, literal: 'fn', line: 1 },
+      { type: TokenType.FUNCTION, literal: 'fn', line: 1 },
       { type: TokenType.NIL, literal: 'nil', line: 1 },
       { type: TokenType.IDENT, literal: 'five', line: 1 },
       { type: TokenType.NUMBER, literal: '5', line: 1 },
@@ -183,6 +183,86 @@ describe('Lexer', () => {
         { type: TokenType.IDENT, literal: 'x', line: 3 },
         { type: TokenType.RBRACE, literal: '}', line: 4 },
         { type: TokenType.EOF, literal: '', line: 4 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+  });
+
+  describe('fn keyword', () => {
+    it('should tokenize a function with no parameters', () => {
+      const input = `fn greet() {}`;
+      const tests = [
+        { type: TokenType.FUNCTION, literal: 'fn', line: 1 },
+        { type: TokenType.IDENT, literal: 'greet', line: 1 },
+        { type: TokenType.LPAREN, literal: '(', line: 1 },
+        { type: TokenType.RPAREN, literal: ')', line: 1 },
+        { type: TokenType.LBRACE, literal: '{', line: 1 },
+        { type: TokenType.RBRACE, literal: '}', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+
+    it('should tokenize a function with parameters', () => {
+      const input = `fn add(a, b) { a + b }`;
+      const tests = [
+        { type: TokenType.FUNCTION, literal: 'fn', line: 1 },
+        { type: TokenType.IDENT, literal: 'add', line: 1 },
+        { type: TokenType.LPAREN, literal: '(', line: 1 },
+        { type: TokenType.IDENT, literal: 'a', line: 1 },
+        { type: TokenType.COMMA, literal: ',', line: 1 },
+        { type: TokenType.IDENT, literal: 'b', line: 1 },
+        { type: TokenType.RPAREN, literal: ')', line: 1 },
+        { type: TokenType.LBRACE, literal: '{', line: 1 },
+        { type: TokenType.IDENT, literal: 'a', line: 1 },
+        { type: TokenType.PLUS, literal: '+', line: 1 },
+        { type: TokenType.IDENT, literal: 'b', line: 1 },
+        { type: TokenType.RBRACE, literal: '}', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+
+    it('should tokenize a multiline function declaration', () => {
+      const input = `fn add(a, b) {\n  a + b\n}`;
+      const tests = [
+        { type: TokenType.FUNCTION, literal: 'fn', line: 1 },
+        { type: TokenType.IDENT, literal: 'add', line: 1 },
+        { type: TokenType.LPAREN, literal: '(', line: 1 },
+        { type: TokenType.IDENT, literal: 'a', line: 1 },
+        { type: TokenType.COMMA, literal: ',', line: 1 },
+        { type: TokenType.IDENT, literal: 'b', line: 1 },
+        { type: TokenType.RPAREN, literal: ')', line: 1 },
+        { type: TokenType.LBRACE, literal: '{', line: 1 },
+        { type: TokenType.IDENT, literal: 'a', line: 2 },
+        { type: TokenType.PLUS, literal: '+', line: 2 },
+        { type: TokenType.IDENT, literal: 'b', line: 2 },
+        { type: TokenType.RBRACE, literal: '}', line: 3 },
+        { type: TokenType.EOF, literal: '', line: 3 },
       ];
 
       const tokens = new Lexer(input).tokenize();

@@ -8,7 +8,7 @@ import type {
   Program,
 } from './ast';
 import { Lexer } from '../lexer/lexer';
-import { ConstStatement, LetStatement, NodeKind, NumberLiteral } from './ast';
+import { ConstStatement, FunctionDeclaration, LetStatement, NodeKind, NumberLiteral } from './ast';
 import { Parser } from './parser';
 
 function stringify(node: Node): string {
@@ -40,6 +40,11 @@ function stringify(node: Node): string {
     case NodeKind.BLOCK_STATEMENT: {
       const block = node as BlockStatement;
       return `(block ${block.statements.map(stringify).join(' ')})`;
+    }
+    case NodeKind.FUNCTION_DECLARATION: {
+      const fn = node as FunctionDeclaration;
+      const params = fn.parameters.map((p) => p.value).join(' ');
+      return `(fn ${fn.name.value} (${params}) ${stringify(fn.body)})`;
     }
     default:
       return '';
@@ -235,6 +240,107 @@ describe('Parser', () => {
       const parser = new Parser(lexer.tokenize());
 
       expect(() => parser.parse()).toThrow('Closing parentheses not found');
+    });
+  });
+
+  describe('function declarations', () => {
+    it.each([
+      { input: 'fn greet() {}', expected: '(fn greet () (block ))' },
+      { input: 'fn double(x) { x * 2 }', expected: '(fn double (x) (block (* x 2)))' },
+      { input: 'fn add(a, b) { a + b }', expected: '(fn add (a b) (block (+ a b)))' },
+      {
+        input: 'fn sum(a, b, c) { a + b + c }',
+        expected: '(fn sum (a b c) (block (+ (+ a b) c)))',
+      },
+    ])('should parse function declaration $input to $expected', ({ input, expected }) => {
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer.tokenize());
+      const program = parser.parse();
+
+      expect(stringify(program)).toBe(expected);
+    });
+
+    it('should parse function name and parameters', () => {
+      const lexer = new Lexer('fn add(a, b) { a + b }');
+      const parser = new Parser(lexer.tokenize());
+      const program = parser.parse();
+
+      expect(program.statements.length).toBe(1);
+      const stmt = program.statements[0];
+      expect(stmt.tokenLiteral()).toBe('fn');
+      expect(stmt instanceof FunctionDeclaration).toBe(true);
+
+      const fn = stmt as FunctionDeclaration;
+      expect(fn.name.value).toBe('add');
+      expect(fn.parameters.length).toBe(2);
+      expect(fn.parameters[0].value).toBe('a');
+      expect(fn.parameters[1].value).toBe('b');
+    });
+
+    it('should parse function with no parameters', () => {
+      const lexer = new Lexer('fn greet() {}');
+      const parser = new Parser(lexer.tokenize());
+      const program = parser.parse();
+
+      const fn = program.statements[0] as FunctionDeclaration;
+      expect(fn.parameters.length).toBe(0);
+      expect(fn.name.value).toBe('greet');
+    });
+
+    it('should parse function with one parameter', () => {
+      const lexer = new Lexer('fn double(x) { x * 2 }');
+      const parser = new Parser(lexer.tokenize());
+      const program = parser.parse();
+
+      const fn = program.statements[0] as FunctionDeclaration;
+      expect(fn.parameters.length).toBe(1);
+      expect(fn.parameters[0].value).toBe('x');
+    });
+
+    it('should throw for unclosed function body', () => {
+      const lexer = new Lexer('fn add(a, b) { a + b');
+      const parser = new Parser(lexer.tokenize());
+      expect(() => parser.parse()).toThrow();
+    });
+
+    it.each([
+      { input: 'fn () {}', desc: 'missing function name' },
+      { input: 'fn {}', desc: 'missing name and parameter list' },
+      { input: 'fn add {}', desc: 'missing parameter list' },
+    ])('should throw for $desc: $input', ({ input }) => {
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer.tokenize());
+      expect(() => parser.parse()).toThrow();
+    });
+
+    it.each([
+      { input: 'fn add(a,) {}', desc: 'trailing comma, no param after comma' },
+      { input: 'fn add(a, ) {}', desc: 'trailing comma with space, no param after comma' },
+      { input: 'fn add(, b) {}', desc: 'leading comma before first param' },
+      { input: 'fn add(a,, b) {}', desc: 'double comma between params' },
+    ])('should throw for $desc: $input', ({ input }) => {
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer.tokenize());
+      expect(() => parser.parse()).toThrow();
+    });
+
+    it.each([
+      { input: 'fn add(a, b {}', desc: 'unclosed param list (missing closing paren)' },
+      { input: 'fn add(a, b', desc: 'unclosed param list, EOF' },
+      { input: 'fn add(', desc: 'only opening paren, EOF' },
+    ])('should throw for $desc: $input', ({ input }) => {
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer.tokenize());
+      expect(() => parser.parse()).toThrow();
+    });
+
+    it.each([
+      { input: 'fn add(123) {}', desc: 'number literal as parameter' },
+      { input: 'fn add(a + b) {}', desc: 'expression as parameter' },
+    ])('should throw for $desc: $input', ({ input }) => {
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer.tokenize());
+      expect(() => parser.parse()).toThrow();
     });
   });
 });

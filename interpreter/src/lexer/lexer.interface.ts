@@ -12,7 +12,7 @@ export enum TokenType {
   ELIF = 'elif',
   ELSE = 'else',
   WHILE = 'while',
-  FN = 'fn',
+  FUNCTION = 'fn',
   NIL = 'nil',
   TRUE = 'true',
   FALSE = 'false',

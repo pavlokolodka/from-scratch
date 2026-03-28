@@ -1,3 +1,4 @@
+import type { FunctionValue } from './values/function.value';
 import { Lexer } from '../lexer/lexer';
 import { Parser } from '../parser/parser';
 import { Environment } from './environment';
@@ -152,6 +153,35 @@ describe('Interpreter', () => {
       { input: '(2 * (3 + 4' },
     ])('should throw error for missing closing parenthesis in $input', ({ input }) => {
       expect(() => evaluate(input)).toThrow('Closing parentheses not found');
+    });
+  });
+
+  describe('function declaration', () => {
+    it('should return void on declaration', () => {
+      const result = evaluate('fn add(a, b) { a + b }');
+      expect(result).toEqual({ type: RuntimeType.VOID, value: null });
+    });
+
+    it('should store function in the environment under its name', () => {
+      const result = evaluateAll('fn add(a, b) { a + b }\nadd') as FunctionValue;
+      expect(result.type).toBe(RuntimeType.FUNCTION);
+      expect(result.parameters).toHaveLength(2);
+      expect(result.parameters[0].value).toBe('a');
+      expect(result.parameters[1].value).toBe('b');
+    });
+
+    it.each([
+      { input: 'fn double(x) { x * 2 }\ndouble', params: ['x'] },
+      { input: 'fn add(a, b) { a + b }\nadd', params: ['a', 'b'] },
+      { input: 'fn sum(a, b, c) { a + b + c }\nsum', params: ['a', 'b', 'c'] },
+      { input: 'fn greet() {}\ngreet', params: [] },
+    ])('should store function with correct parameters for $input', ({ input, params }) => {
+      const result = evaluateAll(input) as FunctionValue;
+      expect(result.type).toBe(RuntimeType.FUNCTION);
+      expect(result.parameters).toHaveLength(params.length);
+      params.forEach((name, i) => {
+        expect(result.parameters[i].value).toBe(name);
+      });
     });
   });
 });

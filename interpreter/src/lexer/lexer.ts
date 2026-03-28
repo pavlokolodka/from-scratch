@@ -19,7 +19,7 @@ export class Lexer {
     elif: TokenType.ELIF,
     else: TokenType.ELSE,
     while: TokenType.WHILE,
-    fn: TokenType.FN,
+    fn: TokenType.FUNCTION,
     nil: TokenType.NIL,
     true: TokenType.TRUE,
     false: TokenType.FALSE,

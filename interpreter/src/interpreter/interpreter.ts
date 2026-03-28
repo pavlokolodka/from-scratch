@@ -3,6 +3,7 @@ import type {
   BlockStatement,
   ConstStatement,
   ExpressionStatement,
+  FunctionDeclaration,
   Identifier,
   InfixExpression,
   LetStatement,
@@ -13,6 +14,7 @@ import type { RuntimeValue } from './interpreter.interface';
 import { NodeKind, NumberOperator } from '../parser/ast';
 import { Environment } from './environment';
 import { RuntimeType } from './interpreter.interface';
+import { FunctionValue } from './values/function.value';
 import { IdentifierValue, IdentifierValueInternal } from './values/identifier.value';
 import { NumberValue } from './values/number.value';
 import { VoidValue } from './values/void.value';
@@ -35,9 +37,20 @@ export class Interpreter {
         return this.eval((ast as ExpressionStatement).expression, env);
       case NodeKind.BLOCK_STATEMENT:
         return this._evalBlockStmt(ast as BlockStatement, env);
+      case NodeKind.FUNCTION_DECLARATION:
+        return this._evalFunctionStmt(ast as FunctionDeclaration, env);
       default:
         throw new Error(`AST have no implementation ${JSON.stringify(ast)}`);
     }
+  }
+
+  private _evalFunctionStmt(stmt: FunctionDeclaration, env: Environment): RuntimeValue {
+    const ident = new IdentifierValue(stmt.name.value, stmt.kind);
+    const value = new FunctionValue(stmt.parameters, stmt.body, env);
+
+    env.declare(ident, value);
+
+    return VoidValue;
   }
 
   private _evalBlockStmt(stmt: BlockStatement, env: Environment): RuntimeValue {
