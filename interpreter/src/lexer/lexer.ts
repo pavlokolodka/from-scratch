@@ -23,6 +23,7 @@ export class Lexer {
     nil: TokenType.NIL,
     true: TokenType.TRUE,
     false: TokenType.FALSE,
+    return: TokenType.RETURN,
   };
 
   constructor(input: string) {

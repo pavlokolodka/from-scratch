@@ -187,18 +187,11 @@ describe('Interpreter', () => {
 
   describe('function call', () => {
     it.each([
-      { input: 'fn double(x) { x * 2 }\ndouble(5)', expected: 10 },
-      { input: 'fn add(a, b) { a + b }\nadd(3, 4)', expected: 7 },
-      { input: 'fn sum(a, b, c) { a + b + c }\nsum(1, 2, 3)', expected: 6 },
-      { input: 'fn square(x) { x * x }\nsquare(4)', expected: 16 },
-      { input: 'fn add(a, b) { a + b }\nadd(1 + 1, 3)', expected: 5 },
-    ])('should call function and return result for $input', ({ input, expected }) => {
+      { input: 'fn double(x) { x * 2 }\ndouble(5)' },
+      { input: 'fn add(a, b) { a + b }\nadd(3, 4)' },
+      { input: 'fn greet() {}\ngreet()' },
+    ])('should return void when function has no explicit return for $input', ({ input }) => {
       const result = evaluateAll(input);
-      expect(result).toEqual({ type: RuntimeType.NUMBER, value: expected });
-    });
-
-    it('should return void when function body is empty', () => {
-      const result = evaluateAll('fn greet() {}\ngreet()');
       expect(result).toEqual({ type: RuntimeType.VOID, value: null });
     });
 
@@ -223,15 +216,50 @@ describe('Interpreter', () => {
     });
 
     it('should support chained calls', () => {
-      const input = 'fn add(a, b) { a + b }\nlet x = add(1, 2)\nadd(x, 4)';
+      const input = 'fn add(a, b) { return a + b }\nlet x = add(1, 2)\nadd(x, 4)';
       const result = evaluateAll(input);
       expect(result).toEqual({ type: RuntimeType.NUMBER, value: 7 });
     });
 
     it('should close over outer scope variables', () => {
-      const input = 'let n = 10\nfn addN(x) { x + n }\naddN(5)';
+      const input = 'let n = 10\nfn addN(x) { return x + n }\naddN(5)';
       const result = evaluateAll(input);
       expect(result).toEqual({ type: RuntimeType.NUMBER, value: 15 });
+    });
+  });
+
+  describe('return statements', () => {
+    it.each([
+      { input: 'fn double(x) { return x * 2 }\ndouble(5)', expected: 10 },
+      { input: 'fn add(a, b) { return a + b }\nadd(3, 4)', expected: 7 },
+      { input: 'fn square(x) { return x * x }\nsquare(4)', expected: 16 },
+      { input: 'fn sum(a, b, c) { return a + b + c }\nsum(1, 2, 3)', expected: 6 },
+    ])('should return expression value from function for $input', ({ input, expected }) => {
+      const result = evaluateAll(input);
+      expect(result).toEqual({ type: RuntimeType.NUMBER, value: expected });
+    });
+
+    it('should return early and not evaluate subsequent statements', () => {
+      const input = 'fn first(a, b) { return a\nb }\nfirst(1, 2)';
+      const result = evaluateAll(input);
+      expect(result).toEqual({ type: RuntimeType.NUMBER, value: 1 });
+    });
+
+    it('should return from nested block inside function', () => {
+      const input = 'fn f(x) { { return x * 3 } }\nf(4)';
+      const result = evaluateAll(input);
+      expect(result).toEqual({ type: RuntimeType.NUMBER, value: 12 });
+    });
+
+    it('should return a call expression result', () => {
+      const input =
+        'fn double(x) { return x * 2 }\nfn quad(x) { return double(double(x)) }\nquad(3)';
+      const result = evaluateAll(input);
+      expect(result).toEqual({ type: RuntimeType.NUMBER, value: 12 });
+    });
+
+    it('should throw when return is used outside a function', () => {
+      expect(() => evaluateAll('return 5')).toThrow();
     });
   });
 });

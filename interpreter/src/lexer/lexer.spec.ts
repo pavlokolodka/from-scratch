@@ -387,6 +387,73 @@ describe('Lexer', () => {
     });
   });
 
+  describe('return keyword', () => {
+    it('should tokenize a return statement', () => {
+      const input = `return 5`;
+      const tests = [
+        { type: TokenType.RETURN, literal: 'return', line: 1 },
+        { type: TokenType.NUMBER, literal: '5', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+
+    it('should tokenize return with expression', () => {
+      const input = `return a + b`;
+      const tests = [
+        { type: TokenType.RETURN, literal: 'return', line: 1 },
+        { type: TokenType.IDENT, literal: 'a', line: 1 },
+        { type: TokenType.PLUS, literal: '+', line: 1 },
+        { type: TokenType.IDENT, literal: 'b', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+
+    it('should tokenize return inside a function', () => {
+      const input = `fn double(x) { return x * 2 }`;
+      const tests = [
+        { type: TokenType.FUNCTION, literal: 'fn', line: 1 },
+        { type: TokenType.IDENT, literal: 'double', line: 1 },
+        { type: TokenType.LPAREN, literal: '(', line: 1 },
+        { type: TokenType.IDENT, literal: 'x', line: 1 },
+        { type: TokenType.RPAREN, literal: ')', line: 1 },
+        { type: TokenType.LBRACE, literal: '{', line: 1 },
+        { type: TokenType.RETURN, literal: 'return', line: 1 },
+        { type: TokenType.IDENT, literal: 'x', line: 1 },
+        { type: TokenType.MULTIPLY, literal: '*', line: 1 },
+        { type: TokenType.NUMBER, literal: '2', line: 1 },
+        { type: TokenType.RBRACE, literal: '}', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+  });
+
   it('should tokenize illegal tokens', () => {
     const input = `@ # $`;
     const tests = [

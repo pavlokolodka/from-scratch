@@ -9,7 +9,14 @@ import type {
   Program,
 } from './ast';
 import { Lexer } from '../lexer/lexer';
-import { ConstStatement, FunctionDeclaration, LetStatement, NodeKind, NumberLiteral } from './ast';
+import {
+  ConstStatement,
+  FunctionDeclaration,
+  LetStatement,
+  NodeKind,
+  NumberLiteral,
+  ReturnStatement,
+} from './ast';
 import { Parser } from './parser';
 
 function stringify(node: Node): string {
@@ -51,6 +58,10 @@ function stringify(node: Node): string {
       const call = node as CallExpression;
       const args = call.args.map(stringify).join(' ');
       return `(call ${call.identifier.value} (${args}))`;
+    }
+    case NodeKind.RETURN_STATEMENT: {
+      const ret = node as ReturnStatement;
+      return `(return ${stringify(ret.value)})`;
     }
     default:
       return '';
@@ -396,6 +407,61 @@ describe('Parser', () => {
       { input: 'add(', desc: 'only opening paren, EOF' },
     ])('should throw for $desc: $input', ({ input }) => {
       const lexer = new Lexer(input);
+      const parser = new Parser(lexer.tokenize());
+      expect(() => parser.parse()).toThrow();
+    });
+  });
+
+  describe('return statements', () => {
+    it.each([
+      { input: 'return 5', expected: '(return 5)' },
+      { input: 'return a', expected: '(return a)' },
+      { input: 'return a + b', expected: '(return (+ a b))' },
+      { input: 'return x * 2', expected: '(return (* x 2))' },
+      { input: 'return add(1, 2)', expected: '(return (call add (1 2)))' },
+    ])('should parse return statement $input to $expected', ({ input, expected }) => {
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer.tokenize());
+      const program = parser.parse();
+
+      expect(stringify(program)).toBe(expected);
+    });
+
+    it('should parse return statement AST node fields', () => {
+      const lexer = new Lexer('return 5');
+      const parser = new Parser(lexer.tokenize());
+      const program = parser.parse();
+
+      expect(program.statements.length).toBe(1);
+      const stmt = program.statements[0];
+      expect(stmt.tokenLiteral()).toBe('return');
+      expect(stmt instanceof ReturnStatement).toBe(true);
+
+      const ret = stmt as ReturnStatement;
+      expect(ret.value instanceof NumberLiteral).toBe(true);
+      expect((ret.value as NumberLiteral).value).toBe(5);
+    });
+
+    it('should parse return inside function body', () => {
+      const input = 'fn double(x) { return x * 2 }';
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer.tokenize());
+      const program = parser.parse();
+
+      expect(stringify(program)).toBe('(fn double (x) (block (return (* x 2))))');
+    });
+
+    it('should parse early return before other statements', () => {
+      const input = 'fn first(a, b) { return a\nb }';
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer.tokenize());
+      const program = parser.parse();
+
+      expect(stringify(program)).toBe('(fn first (a b) (block (return a) b))');
+    });
+
+    it('should throw for return with no expression', () => {
+      const lexer = new Lexer('return');
       const parser = new Parser(lexer.tokenize());
       expect(() => parser.parse()).toThrow();
     });

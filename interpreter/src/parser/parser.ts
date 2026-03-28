@@ -13,6 +13,7 @@ import {
   LetStatement,
   NumberLiteral,
   Program,
+  ReturnStatement,
 } from './ast';
 import assert from 'node:assert';
 
@@ -69,6 +70,8 @@ export class Parser {
         return this._parseBlockStatement();
       case TokenType.FUNCTION:
         return this._parseFunctionStatement();
+      case TokenType.RETURN:
+        return this._parseReturnStatement();
       case TokenType.IDENT:
         if (this._peekTokenIs(TokenType.ASSIGN)) {
           return this._parseAssignStatement();
@@ -77,6 +80,24 @@ export class Parser {
       default:
         return this._parseExpressionStatement();
     }
+  }
+
+  private _parseReturnStatement(): ReturnStatement {
+    const token = this._currentToken;
+
+    this._nextToken();
+
+    if (this._currTokenIs(TokenType.EOF) || this._currTokenIs(TokenType.SEMICOLON)) {
+      throw new Error('Expected expression after return');
+    }
+
+    const value = this._parseExpression(this._lowPrecedence);
+
+    if (this._peekTokenIs(TokenType.SEMICOLON)) {
+      this._nextToken();
+    }
+
+    return new ReturnStatement(token, value);
   }
 
   private _parseFunctionStatement(): FunctionDeclaration | null {

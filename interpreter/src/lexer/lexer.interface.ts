@@ -16,6 +16,7 @@ export enum TokenType {
   NIL = 'nil',
   TRUE = 'true',
   FALSE = 'false',
+  RETURN = 'return',
 
   // Operators
   ASSIGN = '=',

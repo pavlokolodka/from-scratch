@@ -1,6 +1,7 @@
 import type {
   AssignStatement,
   BlockStatement,
+  CallExpression,
   ConstStatement,
   ExpressionStatement,
   FunctionDeclaration,
@@ -9,6 +10,7 @@ import type {
   LetStatement,
   Node,
   NumberLiteral,
+  ReturnStatement,
 } from '../parser/ast';
 import type { RuntimeValue } from './interpreter.interface';
 import { NodeKind, NumberOperator } from '../parser/ast';
@@ -17,9 +19,11 @@ import { RuntimeType } from './interpreter.interface';
 import { FunctionValue } from './values/function.value';
 import { IdentifierValue, IdentifierValueInternal } from './values/identifier.value';
 import { NumberValue } from './values/number.value';
+import { ReturnValue } from './values/return.value';
 import { VoidValue } from './values/void.value';
 
 export class Interpreter {
+  private _callDepth = 0;
   eval(ast: Node, env: Environment): RuntimeValue {
     switch (ast.kind) {
       case NodeKind.NUMBER_LITERAL:
@@ -39,9 +43,45 @@ export class Interpreter {
         return this._evalBlockStmt(ast as BlockStatement, env);
       case NodeKind.FUNCTION_DECLARATION:
         return this._evalFunctionStmt(ast as FunctionDeclaration, env);
+      case NodeKind.CALL_EXPRESSION:
+        return this._evalCallExpr(ast as CallExpression, env);
+      case NodeKind.RETURN_STATEMENT:
+        return this._evalReturnStmt(ast as ReturnStatement, env);
       default:
         throw new Error(`AST have no implementation ${JSON.stringify(ast)}`);
     }
+  }
+
+  private _evalReturnStmt(stmt: ReturnStatement, env: Environment): ReturnValue {
+    if (this._callDepth === 0) {
+      throw new Error('return outside of function');
+    }
+    return new ReturnValue(this.eval(stmt.value, env));
+  }
+
+  private _evalCallExpr(expr: CallExpression, env: Environment): RuntimeValue {
+    const func = this._evalIdentifier(expr.identifier, env);
+
+    if (!(func instanceof FunctionValue)) {
+      throw new Error(`${expr.identifier.value} is not a function`);
+    }
+
+    if (expr.args.length !== func.parameters.length) {
+      throw new Error(`Expected ${func.parameters.length} argument(s) but got ${expr.args.length}`);
+    }
+
+    const funcEnv = new Environment(func.environment);
+
+    for (let i = 0; i < func.parameters.length; i++) {
+      const param = new IdentifierValue(func.parameters[i].value, NodeKind.LET_STATEMENT);
+      funcEnv.declare(param, this.eval(expr.args[i], env));
+    }
+
+    this._callDepth++;
+    const result = this._evalBlockStmt(func.body, funcEnv);
+    this._callDepth--;
+
+    return result instanceof ReturnValue ? result.value : result;
   }
 
   private _evalFunctionStmt(stmt: FunctionDeclaration, env: Environment): RuntimeValue {
@@ -55,10 +95,10 @@ export class Interpreter {
 
   private _evalBlockStmt(stmt: BlockStatement, env: Environment): RuntimeValue {
     const localEnv = new Environment(env);
-    const localStatements = stmt.statements;
 
-    for (const lstmt of localStatements) {
-      this.eval(lstmt, localEnv);
+    for (const lstmt of stmt.statements) {
+      const result = this.eval(lstmt, localEnv);
+      if (result instanceof ReturnValue) return result;
     }
 
     return VoidValue;

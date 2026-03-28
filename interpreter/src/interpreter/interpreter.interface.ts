@@ -3,6 +3,7 @@ export enum RuntimeType {
   IDENTIFIER = 'IDENTIFIER',
   VOID = 'VOID',
   FUNCTION = 'FUNCTION',
+  RETURN = 'RETURN',
 }
 
 export interface RuntimeValue {

@@ -10,6 +10,6 @@ export class FunctionValue implements RuntimeValue {
   constructor(
     readonly parameters: Identifier[],
     readonly body: BlockStatement,
-    readonly closure: Environment,
+    readonly environment: Environment,
   ) {}
 }
