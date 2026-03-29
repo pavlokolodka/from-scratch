@@ -4,14 +4,10 @@
   "keywords": [],
   "author": "Pavlo Kolodka",
   "license": "MIT",
+  "type": "module",
   "description": "",
   "scripts": {
     "prepare": "husky"
-  },
-  "lint-staged": {
-    "*.{js,ts,json}": [
-      "biome check --write"
-    ]
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
