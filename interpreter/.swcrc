@@ -10,7 +10,16 @@
     "target": "esnext",
     "loose": false,
     "externalHelpers": false,
-    "keepClassNames": true
+    "keepClassNames": true,
+    "transform": {
+      "optimizer": {
+        "globals": {
+          "vars": {
+            "__DEV__": "process.env.NODE_ENV !== 'production'"
+          }
+        }
+      }
+    }
   },
   "module": {
     "type": "commonjs",

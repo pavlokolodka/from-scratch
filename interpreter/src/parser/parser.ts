@@ -15,6 +15,7 @@ import {
   Program,
   ReturnStatement,
 } from './ast';
+import { __DEV__, toDebugToken } from './debug';
 import assert from 'node:assert';
 
 export class Parser {
@@ -83,6 +84,12 @@ export class Parser {
   }
 
   private _parseReturnStatement(): ReturnStatement {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.RETURN),
+        `_parseReturnStatement called with non-RETURN token: ${toDebugToken(this._currentToken)}`,
+      );
+
     const token = this._currentToken;
 
     this._nextToken();
@@ -101,6 +108,12 @@ export class Parser {
   }
 
   private _parseFunctionStatement(): FunctionDeclaration | null {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.FUNCTION),
+        `_parseFunctionStatement called with non-FUNCTION token: ${toDebugToken(this._currentToken)}`,
+      );
+
     const token = this._currentToken;
 
     if (!this._expectPeek(TokenType.IDENT)) {
@@ -148,6 +161,12 @@ export class Parser {
   }
 
   private _parseBlockStatement(): BlockStatement | null {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.LBRACE),
+        `_parseBlockStatement called with non-LBRACE token: ${toDebugToken(this._currentToken)}`,
+      );
+
     const token = this._currentToken;
     const statements: Statement[] = [];
 
@@ -168,6 +187,12 @@ export class Parser {
   }
 
   private _parseLetStatement(): LetStatement | null {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.LET),
+        `_parseLetStatement called with non-LET token: ${toDebugToken(this._currentToken)}`,
+      );
+
     const token = this._currentToken;
 
     if (!this._expectPeek(TokenType.IDENT)) {
@@ -192,6 +217,12 @@ export class Parser {
   }
 
   private _parseConstStatement(): ConstStatement | null {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.CONST),
+        `_parseConstStatement called with non-CONST token: ${toDebugToken(this._currentToken)}`,
+      );
+
     const token = this._currentToken;
 
     if (!this._expectPeek(TokenType.IDENT)) {
@@ -227,6 +258,17 @@ export class Parser {
   }
 
   private _parseAssignStatement(): AssignStatement {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.IDENT),
+        `_parseAssignStatement called with non-IDENT token: ${toDebugToken(this._currentToken)}`,
+      );
+    __DEV__ &&
+      assert.ok(
+        this._peekTokenIs(TokenType.ASSIGN),
+        `_parseAssignStatement called without ASSIGN peek token: ${toDebugToken(this._peekToken)}`,
+      );
+
     const token = this._currentToken;
     const identifier = new Identifier(this._currentToken);
 
@@ -281,6 +323,12 @@ export class Parser {
   }
 
   private _parseLParen(): Expression {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.LPAREN),
+        `_parseLParen called with non-LPAREN token: ${toDebugToken(this._currentToken)}`,
+      );
+
     this._nextToken();
 
     const expr = this._parseExpression(this._lowPrecedence);
@@ -309,13 +357,19 @@ export class Parser {
   }
 
   private _parseCallExpression(left: Expression): CallExpression {
-    assert.ok(left instanceof Identifier, `Expected function name, got ${left.kind}`);
+    __DEV__ && assert.ok(left instanceof Identifier, `Expected function name, got ${left.kind}`);
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.LPAREN),
+        `_parseCallExpression called with non-LPAREN token: ${toDebugToken(this._currentToken)}`,
+      );
 
     const token = this._currentToken;
+    const ident = left as Identifier;
     const args: Expression[] = [];
 
     if (this._expectPeek(TokenType.RPAREN)) {
-      return new CallExpression(token, left, args);
+      return new CallExpression(token, ident, args);
     }
 
     this._nextToken();
@@ -350,10 +404,18 @@ export class Parser {
       throw new Error("Unclosed argument list: expected ')'");
     }
 
-    return new CallExpression(token, left, args);
+    return new CallExpression(token, ident, args);
   }
 
   private _parseInfixExpression(left: Expression): Expression {
+    __DEV__ &&
+      assert.ok(
+        [TokenType.PLUS, TokenType.MINUS, TokenType.MULTIPLY, TokenType.DIVIDE].includes(
+          this._currentToken.type as TokenType,
+        ),
+        `_parseInfixExpression called with non-operator token: ${toDebugToken(this._currentToken)}`,
+      );
+
     const token = this._currentToken;
     const precedence = this._getPrecedence(token);
 
