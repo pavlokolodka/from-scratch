@@ -141,6 +141,7 @@ describe('Parser', () => {
     });
 
     it.each([
+      { input: 'let;', desc: 'missing identifier' },
       { input: 'let = 5;', desc: 'missing identifier' },
       { input: 'let x;', desc: 'missing value' },
     ])('should throw for $desc: $input', ({ input }) => {
@@ -162,6 +163,7 @@ describe('Parser', () => {
     });
 
     it.each([
+      { input: 'const;', desc: 'missing identifier' },
       { input: 'const = 5;', desc: 'missing identifier' },
       { input: 'const x;', desc: 'missing value' },
     ])('should throw for $desc: $input', ({ input }) => {

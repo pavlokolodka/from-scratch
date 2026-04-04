@@ -65,6 +65,8 @@ export class Parser {
 
   private _parseStatement(): Statement | null {
     switch (this._currentToken.type) {
+      case TokenType.SEMICOLON:
+        return null;
       case TokenType.LET:
         return this._parseLetStatement();
       case TokenType.CONST:
@@ -85,7 +87,7 @@ export class Parser {
     }
   }
 
-  private _parseArray(): ArrayLiteral | null {
+  private _parseArray(): ArrayLiteral {
     __DEV__ &&
       assert.ok(
         this._currTokenIs(TokenType.LBRACKET),
@@ -144,7 +146,7 @@ export class Parser {
     return new ReturnStatement(token, value);
   }
 
-  private _parseFunctionStatement(): FunctionDeclaration | null {
+  private _parseFunctionStatement(): FunctionDeclaration {
     __DEV__ &&
       assert.ok(
         this._currTokenIs(TokenType.FUNCTION),
@@ -199,7 +201,7 @@ export class Parser {
     return new FunctionDeclaration(token, ident, parameters, body);
   }
 
-  private _parseBlockStatement(): BlockStatement | null {
+  private _parseBlockStatement(): BlockStatement {
     __DEV__ &&
       assert.ok(
         this._currTokenIs(TokenType.LBRACE),
@@ -225,7 +227,7 @@ export class Parser {
     return new BlockStatement(token, statements);
   }
 
-  private _parseLetStatement(): LetStatement | null {
+  private _parseLetStatement(): LetStatement {
     __DEV__ &&
       assert.ok(
         this._currTokenIs(TokenType.LET),
@@ -235,13 +237,15 @@ export class Parser {
     const token = this._currentToken;
 
     if (!this._expectPeek(TokenType.IDENT)) {
-      return null;
+      throw new Error(`Expected identifier in let statement, got ${toDebugToken(this._peekToken)}`);
     }
 
     const identifier = new Identifier(this._currentToken);
 
     if (!this._expectPeek(TokenType.ASSIGN)) {
-      return null;
+      throw new Error(
+        `Expected '=' after identifier in let statement, got ${toDebugToken(this._peekToken)}`,
+      );
     }
 
     this._nextToken();
@@ -255,7 +259,7 @@ export class Parser {
     return new LetStatement(token, identifier, value);
   }
 
-  private _parseConstStatement(): ConstStatement | null {
+  private _parseConstStatement(): ConstStatement {
     __DEV__ &&
       assert.ok(
         this._currTokenIs(TokenType.CONST),
@@ -265,13 +269,17 @@ export class Parser {
     const token = this._currentToken;
 
     if (!this._expectPeek(TokenType.IDENT)) {
-      return null;
+      throw new Error(
+        `Expected identifier in const statement, got ${toDebugToken(this._peekToken)}`,
+      );
     }
 
     const identifier = new Identifier(this._currentToken);
 
     if (!this._expectPeek(TokenType.ASSIGN)) {
-      return null;
+      throw new Error(
+        `Expected '=' after identifier in const statement, got ${toDebugToken(this._peekToken)}`,
+      );
     }
 
     this._nextToken();
