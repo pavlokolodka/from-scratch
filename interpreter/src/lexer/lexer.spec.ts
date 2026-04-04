@@ -454,6 +454,166 @@ describe('Lexer', () => {
     });
   });
 
+  describe('string literals', () => {
+    it('should tokenize a simple string literal', () => {
+      const input = `"hello"`;
+      const tests = [
+        { type: TokenType.STRING, literal: 'hello', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+
+    it('should tokenize an empty string literal', () => {
+      const input = `""`;
+      const tests = [
+        { type: TokenType.STRING, literal: '', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+
+    it('should tokenize a string with spaces', () => {
+      const input = `"hello world"`;
+      const tests = [
+        { type: TokenType.STRING, literal: 'hello world', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+
+    it('should tokenize a string assigned to a variable', () => {
+      const input = `let name = "alice";`;
+      const tests = [
+        { type: TokenType.LET, literal: 'let', line: 1 },
+        { type: TokenType.IDENT, literal: 'name', line: 1 },
+        { type: TokenType.ASSIGN, literal: '=', line: 1 },
+        { type: TokenType.STRING, literal: 'alice', line: 1 },
+        { type: TokenType.SEMICOLON, literal: ';', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+
+    it('should tokenize multiple strings in one line', () => {
+      const input = `"foo" "bar"`;
+      const tests = [
+        { type: TokenType.STRING, literal: 'foo', line: 1 },
+        { type: TokenType.STRING, literal: 'bar', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+
+    it('should tokenize a string passed as a function argument', () => {
+      const input = `greet("world")`;
+      const tests = [
+        { type: TokenType.IDENT, literal: 'greet', line: 1 },
+        { type: TokenType.LPAREN, literal: '(', line: 1 },
+        { type: TokenType.STRING, literal: 'world', line: 1 },
+        { type: TokenType.RPAREN, literal: ')', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+
+    it('should produce ILLEGAL tokens for single-quoted strings', () => {
+      const input = `'hello'`;
+      const tests = [
+        { type: TokenType.ILLEGAL, literal: "'", line: 1 },
+        { type: TokenType.IDENT, literal: 'hello', line: 1 },
+        { type: TokenType.ILLEGAL, literal: "'", line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+
+    it('should produce a single ILLEGAL token for a lone single quote', () => {
+      const input = `'`;
+      const tests = [
+        { type: TokenType.ILLEGAL, literal: "'", line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+
+    it('should throw for an unclosed string literal', () => {
+      expect(() => new Lexer('"hello').tokenize()).toThrow();
+    });
+
+    it('should throw for a string with only an opening quote', () => {
+      expect(() => new Lexer('"').tokenize()).toThrow();
+    });
+
+    it('should throw for an unclosed string in a let declaration', () => {
+      expect(() => new Lexer('let x = "hello').tokenize()).toThrow();
+    });
+  });
+
   it('should tokenize illegal tokens', () => {
     const input = `@ # $`;
     const tests = [

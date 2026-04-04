@@ -16,6 +16,7 @@ import {
   NodeKind,
   NumberLiteral,
   ReturnStatement,
+  StringLiteral,
 } from './ast';
 import { Parser } from './parser';
 
@@ -35,6 +36,8 @@ function stringify(node: Node): string {
     }
     case NodeKind.NUMBER_LITERAL:
       return (node as NumberLiteral).tokenLiteral();
+    case NodeKind.STRING_LITERAL:
+      return `"${(node as StringLiteral).value}"`;
     case NodeKind.IDENTIFIER:
       return (node as Identifier).value;
     case NodeKind.LET_STATEMENT: {
@@ -464,6 +467,63 @@ describe('Parser', () => {
       const lexer = new Lexer('return');
       const parser = new Parser(lexer.tokenize());
       expect(() => parser.parse()).toThrow();
+    });
+  });
+
+  describe('string literals', () => {
+    it.each([
+      { input: '"hello"', value: 'hello' },
+      { input: '"world"', value: 'world' },
+      { input: '""', value: '' },
+      { input: '"hello world"', value: 'hello world' },
+    ])('should parse string literal $input', ({ input, value }) => {
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer.tokenize());
+      const program = parser.parse();
+
+      expect(program.statements.length).toBe(1);
+      const stmt = program.statements[0] as ExpressionStatement;
+      expect(stmt.expression instanceof StringLiteral).toBe(true);
+
+      const str = stmt.expression as StringLiteral;
+      expect(str.value).toBe(value);
+      expect(str.tokenLiteral()).toBe(value);
+    });
+
+    it('should have STRING_LITERAL node kind', () => {
+      const lexer = new Lexer('"foobar"');
+      const parser = new Parser(lexer.tokenize());
+      const program = parser.parse();
+
+      const stmt = program.statements[0] as ExpressionStatement;
+      expect(stmt.expression.kind).toBe(NodeKind.STRING_LITERAL);
+    });
+
+    it.each([
+      { input: 'let s = "hello";', expected: '(let s "hello")' },
+      { input: 'const greeting = "hi";', expected: '(const greeting "hi")' },
+    ])('should stringify string in declaration $input to $expected', ({ input, expected }) => {
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer.tokenize());
+      const program = parser.parse();
+
+      expect(stringify(program)).toBe(expected);
+    });
+
+    it('should parse string as a function argument', () => {
+      const lexer = new Lexer('greet("world")');
+      const parser = new Parser(lexer.tokenize());
+      const program = parser.parse();
+
+      expect(stringify(program)).toBe('(call greet ("world"))');
+    });
+
+    it('should parse multiple string arguments', () => {
+      const lexer = new Lexer('concat("hello", "world")');
+      const parser = new Parser(lexer.tokenize());
+      const program = parser.parse();
+
+      expect(stringify(program)).toBe('(call concat ("hello" "world"))');
     });
   });
 });

@@ -1,4 +1,5 @@
 import type { FunctionValue } from './values/function.value';
+import type { StringValue } from './values/string.value';
 import { Lexer } from '../lexer/lexer';
 import { Parser } from '../parser/parser';
 import { Environment } from './environment';
@@ -260,6 +261,59 @@ describe('Interpreter', () => {
 
     it('should throw when return is used outside a function', () => {
       expect(() => evaluateAll('return 5')).toThrow();
+    });
+  });
+
+  describe('string literals', () => {
+    it.each([
+      { input: '"hello"', expected: 'hello' },
+      { input: '"world"', expected: 'world' },
+      { input: '""', expected: '' },
+      { input: '"hello world"', expected: 'hello world' },
+    ])('should evaluate string literal $input to $expected', ({ input, expected }) => {
+      const result = evaluate(input) as StringValue;
+      expect(result).toEqual({ type: RuntimeType.STRING, value: expected });
+    });
+
+    it('should store a string in a let variable', () => {
+      const result = evaluateAll('let s = "hello"\ns') as StringValue;
+      expect(result).toEqual({ type: RuntimeType.STRING, value: 'hello' });
+    });
+
+    it('should store a string in a const variable', () => {
+      const result = evaluateAll('const greeting = "hi"\ngreeting') as StringValue;
+      expect(result).toEqual({ type: RuntimeType.STRING, value: 'hi' });
+    });
+
+    it('should reassign a string variable', () => {
+      const result = evaluateAll('let s = "hello"\ns = "world"\ns') as StringValue;
+      expect(result).toEqual({ type: RuntimeType.STRING, value: 'world' });
+    });
+
+    it('should pass a string as a function argument', () => {
+      const input = 'fn identity(x) { return x }\nidentity("hello")';
+      const result = evaluateAll(input) as StringValue;
+      expect(result).toEqual({ type: RuntimeType.STRING, value: 'hello' });
+    });
+
+    it('should return a string from a function', () => {
+      const input = 'fn greet() { return "hello" }\ngreet()';
+      const result = evaluateAll(input) as StringValue;
+      expect(result).toEqual({ type: RuntimeType.STRING, value: 'hello' });
+    });
+  });
+
+  describe('string operands', () => {
+    it.each([
+      { input: '"hello" + "world"', desc: 'string + string' },
+      { input: '"hello" - "world"', desc: 'string - string' },
+      { input: '"hello" * "world"', desc: 'string * string' },
+      { input: '"hello" / "world"', desc: 'string / string' },
+      { input: '"hello" + 1', desc: 'string + number' },
+      { input: '1 + "hello"', desc: 'number + string' },
+      { input: '"hello" * 2', desc: 'string * number' },
+    ])('should throw for $desc', ({ input }) => {
+      expect(() => evaluate(input)).toThrow();
     });
   });
 });

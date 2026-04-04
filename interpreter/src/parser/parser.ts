@@ -14,6 +14,7 @@ import {
   NumberLiteral,
   Program,
   ReturnStatement,
+  StringLiteral,
 } from './ast';
 import { __DEV__, toDebugToken } from './debug';
 import assert from 'node:assert';
@@ -315,6 +316,8 @@ export class Parser {
         return new Identifier(this._currentToken);
       case TokenType.NUMBER:
         return new NumberLiteral(this._currentToken);
+      case TokenType.STRING:
+        return new StringLiteral(this._currentToken);
       case TokenType.LPAREN:
         return this._parseLParen();
       default:

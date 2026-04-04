@@ -11,6 +11,7 @@ import type {
   Node,
   NumberLiteral,
   ReturnStatement,
+  StringLiteral,
 } from '../parser/ast';
 import type { RuntimeValue } from './interpreter.interface';
 import { NodeKind, NumberOperator } from '../parser/ast';
@@ -20,6 +21,7 @@ import { FunctionValue } from './values/function.value';
 import { IdentifierValue, IdentifierValueInternal } from './values/identifier.value';
 import { NumberValue } from './values/number.value';
 import { ReturnValue } from './values/return.value';
+import { StringValue } from './values/string.value';
 import { VoidValue } from './values/void.value';
 
 export class Interpreter {
@@ -28,6 +30,8 @@ export class Interpreter {
     switch (ast.kind) {
       case NodeKind.NUMBER_LITERAL:
         return new NumberValue((ast as NumberLiteral).value);
+      case NodeKind.STRING_LITERAL:
+        return new StringValue((ast as StringLiteral).value);
       case NodeKind.LET_STATEMENT:
       case NodeKind.CONST_STATEMENT:
         return this._evalDeclareStmt(ast as LetStatement, env);

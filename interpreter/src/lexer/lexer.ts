@@ -145,6 +145,9 @@ export class Lexer {
     while (this._char !== '"' && this._char !== '') {
       this._readChar();
     }
+
+    if (this._char !== '"') throw new Error('Unclosed double quotes');
+
     return this._input.slice(position, this._position);
   }
 
