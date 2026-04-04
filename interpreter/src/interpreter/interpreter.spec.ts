@@ -37,230 +37,43 @@ describe('Interpreter', () => {
     return result!;
   }
 
-  it.each([
-    { input: '5', expected: 5 },
-    { input: '10', expected: 10 },
-  ])('should evaluate number literal $input to $expected', ({ input, expected }) => {
-    const result = evaluate(input);
-    expect(result).toEqual({ type: RuntimeType.NUMBER, value: expected });
-  });
-
-  it.each([
-    { input: '5 + 5', expected: 10 },
-    { input: '5 - 5', expected: 0 },
-    { input: '5 * 5', expected: 25 },
-    { input: '5 / 5', expected: 1 },
-    { input: '5 + 5 + 5 + 5 - 10', expected: 10 },
-    { input: '2 * 2 * 2 * 2 * 2', expected: 32 },
-    { input: '50 / 2 * 2 + 10', expected: 60 },
-    { input: '2 + 3 * 4', expected: 14 },
-    { input: '3 * 4 + 2', expected: 14 },
-    { input: '2 * (3 + 4)', expected: 14 },
-    { input: '(2 * (3 + 4))', expected: 14 },
-    { input: '((5 + 5) * 5) * 5', expected: 250 },
-  ])('should evaluate infix expression $input to $expected', ({ input, expected }) => {
-    const result = evaluate(input);
-    expect(result).toEqual({ type: RuntimeType.NUMBER, value: expected });
-  });
-
-  describe('let declaration', () => {
+  describe('number literal', () => {
     it.each([
-      { input: 'let x = 5\nx', expected: 5 },
-      { input: 'let result = 10\nresult', expected: 10 },
-      { input: 'let a = 2 + 3\na', expected: 5 },
-      { input: 'let a = 5\nlet b = 10\nb', expected: 10 },
-    ])('should declare and look up $input', ({ input, expected }) => {
-      const result = evaluateAll(input);
+      { input: '5', expected: 5 },
+      { input: '10', expected: 10 },
+    ])('should evaluate number literal $input to $expected', ({ input, expected }) => {
+      const result = evaluate(input);
       expect(result).toEqual({ type: RuntimeType.NUMBER, value: expected });
     });
 
-    it('should throw when looking up an undeclared variable', () => {
-      expect(() => evaluate('x')).toThrow();
-    });
-  });
-
-  describe('const declaration', () => {
-    it.each([
-      { input: 'const x = 5\nx', expected: 5 },
-      { input: 'const result = 10\nresult', expected: 10 },
-      { input: 'const a = 2 + 3\na', expected: 5 },
-      { input: 'const a = 5\nconst b = 10\nb', expected: 10 },
-    ])('should declare and look up $input', ({ input, expected }) => {
-      const result = evaluateAll(input);
-      expect(result).toEqual({ type: RuntimeType.NUMBER, value: expected });
-    });
-
-    it('should throw when reassigning a const variable', () => {
-      expect(() => evaluateAll('const x = 5\nx = 10')).toThrow();
-    });
-  });
-
-  describe('reassignment', () => {
-    it.each([
-      { input: 'let x = 5\nx = 10\nx', expected: 10 },
-      { input: 'let x = 1\nx = x + 1\nx', expected: 2 },
-      { input: 'let a = 5\nlet b = 10\na = b\na', expected: 10 },
-      { input: 'let x = 2\nx = x * 3\nx', expected: 6 },
-    ])('should reassign and look up $input', ({ input, expected }) => {
-      const result = evaluateAll(input);
-      expect(result).toEqual({ type: RuntimeType.NUMBER, value: expected });
-    });
-
-    it('should throw when assigning to an undeclared variable', () => {
-      expect(() => evaluateAll('x = 5')).toThrow();
-    });
-  });
-
-  describe('block statements', () => {
-    it('should evaluate a block and return void', () => {
-      const result = evaluate('{}');
-      expect(result).toEqual({ type: RuntimeType.VOID, value: null });
-    });
-
-    it('should create an inner scope — variables do not leak out', () => {
-      expect(() => evaluateAll('{ let x = 5 }\nx')).toThrow();
-    });
-
-    it('should access outer scope variables from inside block', () => {
-      const result = evaluateAll('let x = 10\n{ x }');
-      expect(result).toEqual({ type: RuntimeType.VOID, value: null });
-    });
-
-    it('should shadow outer variable inside block without mutating it', () => {
-      const result = evaluateAll('let x = 1\n{ let x = 99 }\nx');
-      expect(result).toEqual({ type: RuntimeType.NUMBER, value: 1 });
-    });
-
-    it('should mutate outer variable from inside block', () => {
-      const result = evaluateAll('let x = 1\n{ x = 2 }\nx');
-      expect(result).toEqual({ type: RuntimeType.NUMBER, value: 2 });
-    });
-  });
-
-  describe('should throw an error', () => {
-    it('should throw error for unknown node kind', () => {
-      const unknownNode = { kind: 'UNKNOWN' } as any;
-      const env = new Environment();
-      expect(() => interpreter.eval(unknownNode, env)).toThrow(
-        'AST have no implementation {"kind":"UNKNOWN"}',
-      );
-    });
-
-    it.each([
-      { input: '(5' },
-      { input: '(5 + 5' },
-      { input: '((5 + 5)' },
-      { input: '5 + (5 * 5' },
-      { input: '(2 * (3 + 4' },
-    ])('should throw error for missing closing parenthesis in $input', ({ input }) => {
-      expect(() => evaluate(input)).toThrow('Closing parentheses not found');
-    });
-  });
-
-  describe('function declaration', () => {
-    it('should return void on declaration', () => {
-      const result = evaluate('fn add(a, b) { a + b }');
-      expect(result).toEqual({ type: RuntimeType.VOID, value: null });
-    });
-
-    it('should store function in the environment under its name', () => {
-      const result = evaluateAll('fn add(a, b) { a + b }\nadd') as FunctionValue;
-      expect(result.type).toBe(RuntimeType.FUNCTION);
-      expect(result.parameters).toHaveLength(2);
-      expect(result.parameters[0].value).toBe('a');
-      expect(result.parameters[1].value).toBe('b');
-    });
-
-    it.each([
-      { input: 'fn double(x) { x * 2 }\ndouble', params: ['x'] },
-      { input: 'fn add(a, b) { a + b }\nadd', params: ['a', 'b'] },
-      { input: 'fn sum(a, b, c) { a + b + c }\nsum', params: ['a', 'b', 'c'] },
-      { input: 'fn greet() {}\ngreet', params: [] },
-    ])('should store function with correct parameters for $input', ({ input, params }) => {
-      const result = evaluateAll(input) as FunctionValue;
-      expect(result.type).toBe(RuntimeType.FUNCTION);
-      expect(result.parameters).toHaveLength(params.length);
-      params.forEach((name, i) => {
-        expect(result.parameters[i].value).toBe(name);
+    describe('number operations', () => {
+      it.each([
+        { input: '5 + 5', expected: 10 },
+        { input: '5 - 5', expected: 0 },
+        { input: '5 * 5', expected: 25 },
+        { input: '5 / 5', expected: 1 },
+        { input: '5 + 5 + 5 + 5 - 10', expected: 10 },
+        { input: '2 * 2 * 2 * 2 * 2', expected: 32 },
+        { input: '50 / 2 * 2 + 10', expected: 60 },
+        { input: '2 + 3 * 4', expected: 14 },
+        { input: '3 * 4 + 2', expected: 14 },
+        { input: '2 * (3 + 4)', expected: 14 },
+        { input: '(2 * (3 + 4))', expected: 14 },
+        { input: '((5 + 5) * 5) * 5', expected: 250 },
+      ])('should evaluate infix expression $input to $expected', ({ input, expected }) => {
+        const result = evaluate(input);
+        expect(result).toEqual({ type: RuntimeType.NUMBER, value: expected });
       });
-    });
-  });
 
-  describe('function call', () => {
-    it.each([
-      { input: 'fn double(x) { x * 2 }\ndouble(5)' },
-      { input: 'fn add(a, b) { a + b }\nadd(3, 4)' },
-      { input: 'fn greet() {}\ngreet()' },
-    ])('should return void when function has no explicit return for $input', ({ input }) => {
-      const result = evaluateAll(input);
-      expect(result).toEqual({ type: RuntimeType.VOID, value: null });
-    });
-
-    it('should not leak function parameters into outer scope', () => {
-      expect(() => evaluateAll('fn add(a, b) { a + b }\nadd(1, 2)\na')).toThrow();
-    });
-
-    it('should throw when calling an undeclared function', () => {
-      expect(() => evaluateAll('unknown()')).toThrow();
-    });
-
-    it('should throw when calling a non-function value', () => {
-      expect(() => evaluateAll('let x = 5\nx()')).toThrow();
-    });
-
-    it('should throw when called with too few arguments', () => {
-      expect(() => evaluateAll('fn add(a, b) { a + b }\nadd(1)')).toThrow();
-    });
-
-    it('should throw when called with too many arguments', () => {
-      expect(() => evaluateAll('fn double(x) { x * 2 }\ndouble(1, 2)')).toThrow();
-    });
-
-    it('should support chained calls', () => {
-      const input = 'fn add(a, b) { return a + b }\nlet x = add(1, 2)\nadd(x, 4)';
-      const result = evaluateAll(input);
-      expect(result).toEqual({ type: RuntimeType.NUMBER, value: 7 });
-    });
-
-    it('should close over outer scope variables', () => {
-      const input = 'let n = 10\nfn addN(x) { return x + n }\naddN(5)';
-      const result = evaluateAll(input);
-      expect(result).toEqual({ type: RuntimeType.NUMBER, value: 15 });
-    });
-  });
-
-  describe('return statements', () => {
-    it.each([
-      { input: 'fn double(x) { return x * 2 }\ndouble(5)', expected: 10 },
-      { input: 'fn add(a, b) { return a + b }\nadd(3, 4)', expected: 7 },
-      { input: 'fn square(x) { return x * x }\nsquare(4)', expected: 16 },
-      { input: 'fn sum(a, b, c) { return a + b + c }\nsum(1, 2, 3)', expected: 6 },
-    ])('should return expression value from function for $input', ({ input, expected }) => {
-      const result = evaluateAll(input);
-      expect(result).toEqual({ type: RuntimeType.NUMBER, value: expected });
-    });
-
-    it('should return early and not evaluate subsequent statements', () => {
-      const input = 'fn first(a, b) { return a\nb }\nfirst(1, 2)';
-      const result = evaluateAll(input);
-      expect(result).toEqual({ type: RuntimeType.NUMBER, value: 1 });
-    });
-
-    it('should return from nested block inside function', () => {
-      const input = 'fn f(x) { { return x * 3 } }\nf(4)';
-      const result = evaluateAll(input);
-      expect(result).toEqual({ type: RuntimeType.NUMBER, value: 12 });
-    });
-
-    it('should return a call expression result', () => {
-      const input =
-        'fn double(x) { return x * 2 }\nfn quad(x) { return double(double(x)) }\nquad(3)';
-      const result = evaluateAll(input);
-      expect(result).toEqual({ type: RuntimeType.NUMBER, value: 12 });
-    });
-
-    it('should throw when return is used outside a function', () => {
-      expect(() => evaluateAll('return 5')).toThrow();
+      it.each([
+        { input: '(5' },
+        { input: '(5 + 5' },
+        { input: '((5 + 5)' },
+        { input: '5 + (5 * 5' },
+        { input: '(2 * (3 + 4' },
+      ])('should throw error for missing closing parenthesis in $input', ({ input }) => {
+        expect(() => evaluate(input)).toThrow('Closing parentheses not found');
+      });
     });
   });
 
@@ -301,19 +114,245 @@ describe('Interpreter', () => {
       const result = evaluateAll(input) as StringValue;
       expect(result).toEqual({ type: RuntimeType.STRING, value: 'hello' });
     });
+
+    describe('string operations', () => {
+      it.each([
+        { input: '"hello" + "world"', desc: 'string + string' },
+        { input: '"hello" - "world"', desc: 'string - string' },
+        { input: '"hello" * "world"', desc: 'string * string' },
+        { input: '"hello" / "world"', desc: 'string / string' },
+        { input: '"hello" + 1', desc: 'string + number' },
+        { input: '1 + "hello"', desc: 'number + string' },
+        { input: '"hello" * 2', desc: 'string * number' },
+      ])('should throw for $desc', ({ input }) => {
+        expect(() => evaluate(input)).toThrow();
+      });
+    });
   });
 
-  describe('string operands', () => {
-    it.each([
-      { input: '"hello" + "world"', desc: 'string + string' },
-      { input: '"hello" - "world"', desc: 'string - string' },
-      { input: '"hello" * "world"', desc: 'string * string' },
-      { input: '"hello" / "world"', desc: 'string / string' },
-      { input: '"hello" + 1', desc: 'string + number' },
-      { input: '1 + "hello"', desc: 'number + string' },
-      { input: '"hello" * 2', desc: 'string * number' },
-    ])('should throw for $desc', ({ input }) => {
-      expect(() => evaluate(input)).toThrow();
+  describe('let declaration', () => {
+    describe('number', () => {
+      it.each([
+        { input: 'let a = 5\na', expected: 5 },
+        { input: 'let b = 10\nb', expected: 10 },
+        { input: 'let c = 2 + 3\nc', expected: 5 },
+        { input: 'let d = 5\nlet e = 10\nd', expected: 5 },
+      ])('should declare and look up $input', ({ input, expected }) => {
+        const result = evaluateAll(input);
+        expect(result).toEqual({ type: RuntimeType.NUMBER, value: expected });
+      });
+    });
+
+    describe('string', () => {
+      it.each([
+        { input: 'let a = "5"\na', expected: '5' },
+        { input: 'let b = "10"\nb', expected: '10' },
+        { input: 'let c = "hello"\nc', expected: 'hello' },
+        { input: 'let d = "a"\nlet e = "b"\nd', expected: 'a' },
+      ])('should declare and look up $input', ({ input, expected }) => {
+        const result = evaluateAll(input);
+        expect(result).toEqual({ type: RuntimeType.STRING, value: expected });
+      });
+    });
+
+    describe('reassign', () => {
+      it.each([
+        { input: 'let a = 5\na = 10; a', expected: 10 },
+        { input: 'let a = "5"\na = "10"; a', expected: '10' },
+      ])('should throw when reassigning: $input', ({ input, expected }) => {
+        const result = evaluateAll(input);
+        expect(result.value).toBe(expected);
+      });
+    });
+  });
+
+  describe('const declaration', () => {
+    describe('number', () => {
+      it.each([
+        { input: 'const a = 5\na', expected: 5 },
+        { input: 'const b = 10\nb', expected: 10 },
+        { input: 'const c = 2 + 3\nc', expected: 5 },
+        { input: 'const d = 5\nconst e = 10\nd', expected: 5 },
+      ])('should declare and look up $input', ({ input, expected }) => {
+        const result = evaluateAll(input);
+        expect(result).toEqual({ type: RuntimeType.NUMBER, value: expected });
+      });
+    });
+
+    describe('string', () => {
+      it.each([
+        { input: 'const a = "5"\na', expected: '5' },
+        { input: 'const b = "10"\nb', expected: '10' },
+        { input: 'const c = "hello"\nc', expected: 'hello' },
+        { input: 'const d = "a"\nconst e = "b"\nd', expected: 'a' },
+      ])('should declare and look up $input', ({ input, expected }) => {
+        const result = evaluateAll(input);
+        expect(result).toEqual({ type: RuntimeType.STRING, value: expected });
+      });
+    });
+
+    describe('reassign', () => {
+      it.each([
+        { input: 'const a = 5\na = 10' },
+        { input: 'const a = "5"\na = "10' },
+      ])('should throw when reassigning: $input', ({ input }) => {
+        expect(() => evaluateAll(input)).toThrow();
+      });
+    });
+  });
+
+  describe('undeclared variables', () => {
+    it('should throw when looking up an undeclared variable', () => {
+      expect(() => evaluate('x')).toThrow();
+    });
+
+    it('should throw when assigning to an undeclared variable', () => {
+      expect(() => evaluateAll('x = 5')).toThrow();
+    });
+  });
+
+  describe('block statements', () => {
+    it('should evaluate a block and return void', () => {
+      const result = evaluate('{}');
+      expect(result).toEqual({ type: RuntimeType.VOID, value: null });
+    });
+
+    it('should create an inner scope — variables do not leak out', () => {
+      expect(() => evaluateAll('{ let x = 5 }\nx')).toThrow();
+    });
+
+    it('should access outer scope variables from inside block', () => {
+      const result = evaluateAll('let x = 10\n{ x }');
+      expect(result).toEqual({ type: RuntimeType.VOID, value: null });
+    });
+
+    it('should shadow outer variable inside block without mutating it', () => {
+      const result = evaluateAll('let x = 1\n{ let x = 99 }\nx');
+      expect(result).toEqual({ type: RuntimeType.NUMBER, value: 1 });
+    });
+
+    it('should mutate outer variable from inside block', () => {
+      const result = evaluateAll('let x = 1\n{ x = 2 }\nx');
+      expect(result).toEqual({ type: RuntimeType.NUMBER, value: 2 });
+    });
+  });
+
+  describe('function', () => {
+    describe('function declaration', () => {
+      it('should return void on declaration', () => {
+        const result = evaluate('fn add(a, b) { a + b }');
+        expect(result).toEqual({ type: RuntimeType.VOID, value: null });
+      });
+
+      it('should store function in the environment under its name', () => {
+        const result = evaluateAll('fn add(a, b) { a + b }\nadd') as FunctionValue;
+        expect(result.type).toBe(RuntimeType.FUNCTION);
+        expect(result.parameters).toHaveLength(2);
+        expect(result.parameters[0].value).toBe('a');
+        expect(result.parameters[1].value).toBe('b');
+      });
+
+      it.each([
+        { input: 'fn double(x) { x * 2 }\ndouble', params: ['x'] },
+        { input: 'fn add(a, b) { a + b }\nadd', params: ['a', 'b'] },
+        { input: 'fn sum(a, b, c) { a + b + c }\nsum', params: ['a', 'b', 'c'] },
+        { input: 'fn greet() {}\ngreet', params: [] },
+      ])('should store function with correct parameters for $input', ({ input, params }) => {
+        const result = evaluateAll(input) as FunctionValue;
+        expect(result.type).toBe(RuntimeType.FUNCTION);
+        expect(result.parameters).toHaveLength(params.length);
+        params.forEach((name, i) => {
+          expect(result.parameters[i].value).toBe(name);
+        });
+      });
+    });
+
+    describe('function call', () => {
+      it.each([
+        { input: 'fn double(x) { x * 2 }\ndouble(5)' },
+        { input: 'fn add(a, b) { a + b }\nadd(3, 4)' },
+        { input: 'fn greet() {}\ngreet()' },
+      ])('should return void when function has no explicit return for $input', ({ input }) => {
+        const result = evaluateAll(input);
+        expect(result).toEqual({ type: RuntimeType.VOID, value: null });
+      });
+
+      it('should not leak function parameters into outer scope', () => {
+        expect(() => evaluateAll('fn add(a, b) { a + b }\nadd(1, 2)\na')).toThrow();
+      });
+
+      it('should throw when calling an undeclared function', () => {
+        expect(() => evaluateAll('unknown()')).toThrow();
+      });
+
+      it('should throw when calling a non-function value', () => {
+        expect(() => evaluateAll('let x = 5\nx()')).toThrow();
+      });
+
+      it('should throw when called with too few arguments', () => {
+        expect(() => evaluateAll('fn add(a, b) { a + b }\nadd(1)')).toThrow();
+      });
+
+      it('should throw when called with too many arguments', () => {
+        expect(() => evaluateAll('fn double(x) { x * 2 }\ndouble(1, 2)')).toThrow();
+      });
+
+      it('should support chained calls', () => {
+        const input = 'fn add(a, b) { return a + b }\nlet x = add(1, 2)\nadd(x, 4)';
+        const result = evaluateAll(input);
+        expect(result).toEqual({ type: RuntimeType.NUMBER, value: 7 });
+      });
+
+      it('should close over outer scope variables', () => {
+        const input = 'let n = 10\nfn addN(x) { return x + n }\naddN(5)';
+        const result = evaluateAll(input);
+        expect(result).toEqual({ type: RuntimeType.NUMBER, value: 15 });
+      });
+    });
+
+    describe('return statements', () => {
+      it.each([
+        { input: 'fn double(x) { return x * 2 }\ndouble(5)', expected: 10 },
+        { input: 'fn add(a, b) { return a + b }\nadd(3, 4)', expected: 7 },
+        { input: 'fn square(x) { return x * x }\nsquare(4)', expected: 16 },
+        { input: 'fn sum(a, b, c) { return a + b + c }\nsum(1, 2, 3)', expected: 6 },
+      ])('should return expression value from function for $input', ({ input, expected }) => {
+        const result = evaluateAll(input);
+        expect(result).toEqual({ type: RuntimeType.NUMBER, value: expected });
+      });
+
+      it('should return early and not evaluate subsequent statements', () => {
+        const input = 'fn first(a, b) { return a\nb }\nfirst(1, 2)';
+        const result = evaluateAll(input);
+        expect(result).toEqual({ type: RuntimeType.NUMBER, value: 1 });
+      });
+
+      it('should return from nested block inside function', () => {
+        const input = 'fn f(x) { { return x * 3 } }\nf(4)';
+        const result = evaluateAll(input);
+        expect(result).toEqual({ type: RuntimeType.NUMBER, value: 12 });
+      });
+
+      it('should return a call expression result', () => {
+        const input =
+          'fn double(x) { return x * 2 }\nfn quad(x) { return double(double(x)) }\nquad(3)';
+        const result = evaluateAll(input);
+        expect(result).toEqual({ type: RuntimeType.NUMBER, value: 12 });
+      });
+
+      it('should throw when return is used outside a function', () => {
+        expect(() => evaluateAll('return 5')).toThrow();
+      });
+    });
+  });
+
+  describe('should throw an error', () => {
+    it('should throw error for unknown node kind', () => {
+      const unknownNode = { kind: 'UNKNOWN' } as any;
+      const env = new Environment();
+      expect(() => interpreter.eval(unknownNode, env)).toThrow(
+        'AST have no implementation {"kind":"UNKNOWN"}',
+      );
     });
   });
 });
