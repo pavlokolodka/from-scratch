@@ -2,6 +2,7 @@ import type { Token } from '../lexer/lexer.interface';
 import type { Expression, Statement } from './ast';
 import { TokenType } from '../lexer/lexer.interface';
 import {
+  ArrayLiteral,
   AssignStatement,
   BlockStatement,
   CallExpression,
@@ -84,6 +85,41 @@ export class Parser {
     }
   }
 
+  private _parseArray(): ArrayLiteral | null {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.LBRACKET),
+        `_parseArrayStatement called with non-Array token: ${toDebugToken(this._currentToken)}`,
+      );
+
+    const token = this._currentToken;
+
+    if (!this._expectPeekArrayToken() && !this._expectPeek(TokenType.RBRACKET)) {
+      throw new Error(`Unexpected token ${toDebugToken(this._currentToken)}`);
+    }
+
+    const expression: Expression[] = [];
+
+    while (!this._currTokenIs(TokenType.RBRACKET)) {
+      expression.push(this._parseExpression(this._lowPrecedence));
+
+      if (this._expectPeek(TokenType.COMMA)) {
+        if (!this._expectPeekArrayToken()) {
+          throw new Error(
+            `Expected array element after ',', got ${toDebugToken(this._currentToken)}`,
+          );
+        }
+        continue;
+      }
+
+      if (!this._expectPeekArrayToken() && !this._expectPeek(TokenType.RBRACKET)) {
+        throw new Error(`Unexpected token ${toDebugToken(this._currentToken)}`);
+      }
+    }
+
+    return new ArrayLiteral(token, expression);
+  }
+
   private _parseReturnStatement(): ReturnStatement {
     __DEV__ &&
       assert.ok(
@@ -124,11 +160,11 @@ export class Parser {
     const ident = new Identifier(this._currentToken);
 
     if (!this._expectPeek(TokenType.LPAREN)) {
-      throw new Error(`Unexpected token ${this._currentToken}`);
+      throw new Error(`Unexpected token ${toDebugToken(this._currentToken)}`);
     }
 
     if (!this._expectPeek(TokenType.IDENT) && !this._expectPeek(TokenType.RPAREN)) {
-      throw new Error(`Unexpected token ${this._currentToken}`);
+      throw new Error(`Unexpected token ${toDebugToken(this._currentToken)}`);
     }
 
     const parameters: Identifier[] = [];
@@ -138,18 +174,20 @@ export class Parser {
 
       if (this._expectPeek(TokenType.COMMA)) {
         if (!this._expectPeek(TokenType.IDENT)) {
-          throw new Error(`Expected parameter name after ',', got ${this._currentToken}`);
+          throw new Error(
+            `Expected parameter name after ',', got ${toDebugToken(this._currentToken)}`,
+          );
         }
         continue;
       }
 
       if (!this._expectPeek(TokenType.IDENT) && !this._expectPeek(TokenType.RPAREN)) {
-        throw new Error(`Unexpected token ${this._currentToken}`);
+        throw new Error(`Unexpected token ${toDebugToken(this._currentToken)}`);
       }
     }
 
     if (!this._expectPeek(TokenType.LBRACE)) {
-      throw new Error(`Unexpected token ${this._currentToken}`);
+      throw new Error(`Unexpected token ${toDebugToken(this._currentToken)}`);
     }
 
     const body = this._parseBlockStatement();
@@ -288,7 +326,7 @@ export class Parser {
   private _parseExpression(precedence: number): Expression {
     const prefix = this._getPrefix();
     if (!prefix) {
-      throw new Error(`No prefix parsing function for ${this._currentToken.type} found`);
+      throw new Error(`No prefix parsing function for ${toDebugToken(this._currentToken)} found`);
     }
 
     let leftExp = prefix;
@@ -320,6 +358,8 @@ export class Parser {
         return new StringLiteral(this._currentToken);
       case TokenType.LPAREN:
         return this._parseLParen();
+      case TokenType.LBRACKET:
+        return this._parseArray();
       default:
         return null;
     }
@@ -450,6 +490,15 @@ export class Parser {
 
   private _peekTokenIs(t: TokenType): boolean {
     return this._peekToken.type === t;
+  }
+
+  private _expectPeekArrayToken(): boolean {
+    return (
+      this._expectPeek(TokenType.IDENT) ||
+      this._expectPeek(TokenType.STRING) ||
+      this._expectPeek(TokenType.NUMBER) ||
+      this._expectPeek(TokenType.LBRACKET)
+    );
   }
 
   private _expectPeek(t: TokenType): boolean {

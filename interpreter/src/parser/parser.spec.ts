@@ -1,4 +1,5 @@
 import type {
+  ArrayLiteral,
   AssignStatement,
   BlockStatement,
   CallExpression,
@@ -66,6 +67,10 @@ function stringify(node: Node): string {
       const args = call.args.map(stringify).join(' ');
       return `(call ${call.identifier.value} (${args}))`;
     }
+    case NodeKind.ARRAY_LITERAL: {
+      const arr = node as ArrayLiteral;
+      return `(array ${arr.elements.map(stringify).join(' ')})`;
+    }
     case NodeKind.RETURN_STATEMENT: {
       const ret = node as ReturnStatement;
       return `(return ${stringify(ret.value)})`;
@@ -85,7 +90,7 @@ describe('Parser', () => {
       { input: '1', expected: '1' },
       { input: '10', expected: '10' },
       { input: '100000', expected: '100000' },
-    ])('should stringify $input to $expected', ({ input, expected }) => {
+    ])('should parse $input to $expected', ({ input, expected }) => {
       expect(stringify(parse(input))).toBe(expected);
     });
   });
@@ -95,8 +100,30 @@ describe('Parser', () => {
       { input: '"hello"', expected: '"hello"' },
       { input: '"world"', expected: '"world"' },
       { input: '""', expected: '""' },
-    ])('should stringify $input to $expected', ({ input, expected }) => {
+    ])('should parse $input to $expected', ({ input, expected }) => {
       expect(stringify(parse(input))).toBe(expected);
+    });
+  });
+
+  describe('array literals', () => {
+    it.each([
+      { input: '[]', expected: '(array )' },
+      { input: '[1, 2, 3]', expected: '(array 1 2 3)' },
+      { input: '["a", "b"]', expected: '(array "a" "b")' },
+      { input: '[x, y]', expected: '(array x y)' },
+      { input: '[1 + 2, 3]', expected: '(array (+ 1 2) 3)' },
+      { input: '[1, [2, 3]]', expected: '(array 1 (array 2 3))' },
+    ])('should parse $input to $expected', ({ input, expected }) => {
+      expect(stringify(parse(input))).toBe(expected);
+    });
+
+    it.each([
+      { input: '[1, 2', desc: 'unclosed bracket' },
+      { input: '[1,]', desc: 'trailing comma' },
+      { input: '[,1]', desc: 'leading comma' },
+      { input: '[1,,2]', desc: 'double comma' },
+    ])('should throw for $desc: $input', ({ input }) => {
+      expect(() => parse(input)).toThrow();
     });
   });
 
@@ -106,7 +133,10 @@ describe('Parser', () => {
       { input: 'let result = 2 + 3;', expected: '(let result (+ 2 3))' },
       { input: 'let z = x * y;', expected: '(let z (* x y))' },
       { input: 'let s = "hello";', expected: '(let s "hello")' },
-    ])('should stringify $input to $expected', ({ input, expected }) => {
+      { input: 'let a = [1, 2, 3];', expected: '(let a (array 1 2 3))' },
+      { input: 'let a = ["x", "y"];', expected: '(let a (array "x" "y"))' },
+      { input: 'let a = [];', expected: '(let a (array ))' },
+    ])('should parse $input to $expected', ({ input, expected }) => {
       expect(stringify(parse(input))).toBe(expected);
     });
 
@@ -124,7 +154,10 @@ describe('Parser', () => {
       { input: 'const result = 2 + 3;', expected: '(const result (+ 2 3))' },
       { input: 'const z = x * y;', expected: '(const z (* x y))' },
       { input: 'const greeting = "hi";', expected: '(const greeting "hi")' },
-    ])('should stringify $input to $expected', ({ input, expected }) => {
+      { input: 'const a = [1, 2, 3];', expected: '(const a (array 1 2 3))' },
+      { input: 'const a = ["x", "y"];', expected: '(const a (array "x" "y"))' },
+      { input: 'const a = [];', expected: '(const a (array ))' },
+    ])('should parse $input to $expected', ({ input, expected }) => {
       expect(stringify(parse(input))).toBe(expected);
     });
 
@@ -147,7 +180,7 @@ describe('Parser', () => {
       { input: 'x = "hello";', expected: '(= x "hello")' },
       { input: 'x = "1";', expected: '(= x "1")' },
       { input: 'y = "";', expected: '(= y "")' },
-    ])('should stringify $input to $expected', ({ input, expected }) => {
+    ])('should parse $input to $expected', ({ input, expected }) => {
       expect(stringify(parse(input))).toBe(expected);
     });
 
@@ -192,7 +225,7 @@ describe('Parser', () => {
       { input: '(1 * (2 + 3))', expected: '(* 1 (+ 2 3))' },
       { input: '((1 + 2) * 3)', expected: '(* (+ 1 2) 3)' },
       { input: '((1 + 2) * 3) * 4', expected: '(* (* (+ 1 2) 3) 4)' },
-    ])('should stringify $input to $expected', ({ input, expected }) => {
+    ])('should parse $input to $expected', ({ input, expected }) => {
       expect(stringify(parse(input))).toBe(expected);
     });
 
@@ -214,7 +247,9 @@ describe('Parser', () => {
       { input: '{ let x = 5 }', expected: '(block (let x 5))' },
       { input: '{ let x = 5\nx }', expected: '(block (let x 5) x)' },
       { input: '{ let x = 1\nlet y = 2\nx + y }', expected: '(block (let x 1) (let y 2) (+ x y))' },
-    ])('should stringify $input to $expected', ({ input, expected }) => {
+      { input: '{ let a = [1, 2] }', expected: '(block (let a (array 1 2)))' },
+      { input: '{ [1, 2] }', expected: '(block (array 1 2))' },
+    ])('should parse $input to $expected', ({ input, expected }) => {
       expect(stringify(parse(input))).toBe(expected);
     });
 
@@ -230,7 +265,7 @@ describe('Parser', () => {
       { input: 'foobar;', expected: 'foobar' },
       { input: 'a + b;', expected: '(+ a b)' },
       { input: 'x * y + z;', expected: '(+ (* x y) z)' },
-    ])('should stringify $input to $expected', ({ input, expected }) => {
+    ])('should parse $input to $expected', ({ input, expected }) => {
       expect(stringify(parse(input))).toBe(expected);
     });
   });
@@ -245,7 +280,7 @@ describe('Parser', () => {
           input: 'fn sum(a, b, c) { a + b + c }',
           expected: '(fn sum (a b c) (block (+ (+ a b) c)))',
         },
-      ])('should stringify $input to $expected', ({ input, expected }) => {
+      ])('should parse $input to $expected', ({ input, expected }) => {
         expect(stringify(parse(input))).toBe(expected);
       });
 
@@ -296,7 +331,11 @@ describe('Parser', () => {
           input: 'fn greet() { return "hello" }',
           expected: '(fn greet () (block (return "hello")))',
         },
-      ])('should stringify return inside fn body: $input', ({ input, expected }) => {
+        {
+          input: 'fn items() { return [1, 2, 3] }',
+          expected: '(fn items () (block (return (array 1 2 3))))',
+        },
+      ])('should parse return inside fn body: $input', ({ input, expected }) => {
         expect(stringify(parse(input))).toBe(expected);
       });
 
@@ -319,7 +358,7 @@ describe('Parser', () => {
       { input: 'add(x * 2, y)', expected: '(call add ((* x 2) y))' },
       { input: 'greet("world")', expected: '(call greet ("world"))' },
       { input: 'concat("hello", "world")', expected: '(call concat ("hello" "world"))' },
-    ])('should stringify $input to $expected', ({ input, expected }) => {
+    ])('should parse $input to $expected', ({ input, expected }) => {
       expect(stringify(parse(input))).toBe(expected);
     });
 
@@ -347,7 +386,10 @@ describe('Parser', () => {
       { input: 'return x * 2', expected: '(return (* x 2))' },
       { input: 'return add(1, 2)', expected: '(return (call add (1 2)))' },
       { input: 'return "hello"', expected: '(return "hello")' },
-    ])('should stringify $input to $expected', ({ input, expected }) => {
+      { input: 'return [1, 2, 3]', expected: '(return (array 1 2 3))' },
+      { input: 'return ["a", "b"]', expected: '(return (array "a" "b"))' },
+      { input: 'return []', expected: '(return (array ))' },
+    ])('should parse $input to $expected', ({ input, expected }) => {
       expect(stringify(parse(input))).toBe(expected);
     });
 

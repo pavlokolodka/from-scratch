@@ -1,4 +1,5 @@
 import type {
+  ArrayLiteral,
   AssignStatement,
   BlockStatement,
   CallExpression,
@@ -17,6 +18,7 @@ import type { RuntimeValue } from './interpreter.interface';
 import { NodeKind, NumberOperator } from '../parser/ast';
 import { Environment } from './environment';
 import { RuntimeType } from './interpreter.interface';
+import { ArrayValue } from './values/array.value';
 import { FunctionValue } from './values/function.value';
 import { IdentifierValue, IdentifierValueInternal } from './values/identifier.value';
 import { NumberValue } from './values/number.value';
@@ -32,6 +34,8 @@ export class Interpreter {
         return new NumberValue((ast as NumberLiteral).value);
       case NodeKind.STRING_LITERAL:
         return new StringValue((ast as StringLiteral).value);
+      case NodeKind.ARRAY_LITERAL:
+        return this._evalArrayLiteral(ast as ArrayLiteral, env);
       case NodeKind.LET_STATEMENT:
       case NodeKind.CONST_STATEMENT:
         return this._evalDeclareStmt(ast as LetStatement, env);
@@ -54,6 +58,10 @@ export class Interpreter {
       default:
         throw new Error(`AST have no implementation ${JSON.stringify(ast)}`);
     }
+  }
+
+  private _evalArrayLiteral(node: ArrayLiteral, env: Environment): ArrayValue {
+    return new ArrayValue(node.elements.map((el) => this.eval(el, env)));
   }
 
   private _evalReturnStmt(stmt: ReturnStatement, env: Environment): ReturnValue {

@@ -4,6 +4,7 @@ export enum RuntimeType {
   IDENTIFIER = 'IDENTIFIER',
   VOID = 'VOID',
   FUNCTION = 'FUNCTION',
+  ARRAY = 'ARRAY',
   RETURN = 'RETURN',
 }
 
