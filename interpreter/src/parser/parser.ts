@@ -10,6 +10,7 @@ import {
   ExpressionStatement,
   FunctionDeclaration,
   Identifier,
+  IndexExpression,
   InfixExpression,
   LetStatement,
   NumberLiteral,
@@ -402,9 +403,25 @@ export class Parser {
         return this._parseInfixExpression(left);
       case TokenType.LPAREN:
         return this._parseCallExpression(left);
+      case TokenType.LBRACKET:
+        return this._parseIndexExpression(left);
       default:
         return null;
     }
+  }
+
+  private _parseIndexExpression(left: Expression): IndexExpression {
+    const token = this._currentToken;
+
+    this._nextToken();
+
+    const index = this._parseExpression(this._lowPrecedence);
+
+    if (!this._expectPeek(TokenType.RBRACKET)) {
+      throw new Error('Missing closing bracket in index expression');
+    }
+
+    return new IndexExpression(token, left, index);
   }
 
   private _parseCallExpression(left: Expression): CallExpression {
@@ -479,6 +496,7 @@ export class Parser {
 
   private _getPrecedence(token: Token): number {
     switch (token.type) {
+      case TokenType.LBRACKET:
       case TokenType.LPAREN:
         return 3;
       case TokenType.MINUS:

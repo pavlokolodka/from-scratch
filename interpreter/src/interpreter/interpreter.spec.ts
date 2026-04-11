@@ -180,6 +180,59 @@ describe('Interpreter', () => {
         ],
       });
     });
+
+    describe('array index access', () => {
+      it.each([
+        { input: '[1, 2, 3][0]', expected: { type: RuntimeType.NUMBER, value: 1 } },
+        { input: '[1, 2, 3][1]', expected: { type: RuntimeType.NUMBER, value: 2 } },
+        { input: '[1, 2, 3][2]', expected: { type: RuntimeType.NUMBER, value: 3 } },
+        { input: '["a", "b", "c"][0]', expected: { type: RuntimeType.STRING, value: 'a' } },
+        { input: '["a", "b", "c"][2]', expected: { type: RuntimeType.STRING, value: 'c' } },
+      ])('should evaluate $input to expected value', ({ input, expected }) => {
+        expect(evaluate(input)).toEqual(expected);
+      });
+
+      it('should evaluate index access on a variable', () => {
+        const result = evaluateAll('let arr = [10, 20, 30]; arr[0]');
+        expect(result).toEqual({ type: RuntimeType.NUMBER, value: 10 });
+      });
+
+      it('should evaluate index access with an expression index', () => {
+        const result = evaluateAll('let arr = [10, 20, 30]; arr[1 + 1]');
+        expect(result).toEqual({ type: RuntimeType.NUMBER, value: 30 });
+      });
+
+      it('should evaluate index access on a nested array', () => {
+        const result = evaluate('[1, [2, 3]][1]');
+        expect(result).toEqual({
+          type: RuntimeType.ARRAY,
+          value: [
+            { type: RuntimeType.NUMBER, value: 2 },
+            { type: RuntimeType.NUMBER, value: 3 },
+          ],
+        });
+      });
+
+      it('should throw for out-of-bounds index', () => {
+        expect(() => evaluate('[1, 2, 3][5]')).toThrow('Index out of bounds: 5');
+      });
+
+      it('should throw for negative index', () => {
+        expect(() => evaluate('[1, 2][0 - 1]')).toThrow('Index out of bounds: -1');
+      });
+
+      it('should throw for non-number index', () => {
+        expect(() => evaluateAll('let arr = [1, 2]; arr["a"]')).toThrow(
+          'Index must be a number, got STRING',
+        );
+      });
+
+      it('should throw when indexing a non-array value', () => {
+        expect(() => evaluateAll('let x = 5; x[0]')).toThrow(
+          'Index operator not supported for type NUMBER',
+        );
+      });
+    });
   });
 
   describe('let declaration', () => {
@@ -461,15 +514,15 @@ describe('Interpreter', () => {
         });
       });
     });
+  });
 
-    describe('should throw an error', () => {
-      it('should throw error for unknown node kind', () => {
-        const unknownNode = { kind: 'UNKNOWN' } as any;
-        const env = new Environment();
-        expect(() => interpreter.eval(unknownNode, env)).toThrow(
-          'AST have no implementation {"kind":"UNKNOWN"}',
-        );
-      });
+  describe('should throw an error', () => {
+    it('should throw error for unknown node kind', () => {
+      const unknownNode = { kind: 'UNKNOWN' } as any;
+      const env = new Environment();
+      expect(() => interpreter.eval(unknownNode, env)).toThrow(
+        'AST have no implementation {"kind":"UNKNOWN"}',
+      );
     });
   });
 

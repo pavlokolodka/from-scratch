@@ -7,6 +7,7 @@ import type {
   ExpressionStatement,
   FunctionDeclaration,
   Identifier,
+  IndexExpression,
   InfixExpression,
   LetStatement,
   Node,
@@ -36,6 +37,8 @@ export class Interpreter {
         return new StringValue((ast as StringLiteral).value);
       case NodeKind.ARRAY_LITERAL:
         return this._evalArrayLiteral(ast as ArrayLiteral, env);
+      case NodeKind.INDEX_EXPRESSION:
+        return this._evalIndexExpression(ast as IndexExpression, env);
       case NodeKind.LET_STATEMENT:
       case NodeKind.CONST_STATEMENT:
         return this._evalDeclareStmt(ast as LetStatement, env);
@@ -62,6 +65,28 @@ export class Interpreter {
 
   private _evalArrayLiteral(node: ArrayLiteral, env: Environment): ArrayValue {
     return new ArrayValue(node.elements.map((el) => this.eval(el, env)));
+  }
+
+  private _evalIndexExpression(node: IndexExpression, env: Environment): RuntimeValue {
+    const array = this.eval(node.left, env);
+    const index = this.eval(node.index, env);
+
+    if (array.type !== RuntimeType.ARRAY) {
+      throw new Error(`Index operator not supported for type ${array.type}`);
+    }
+
+    if (index.type !== RuntimeType.NUMBER) {
+      throw new Error(`Index must be a number, got ${index.type}`);
+    }
+
+    const elements = (array as ArrayValue).value;
+    const idx = (index as NumberValue).value;
+
+    if (!Number.isInteger(idx) || idx < 0 || idx >= elements.length) {
+      throw new Error(`Index out of bounds: ${idx}`);
+    }
+
+    return elements[idx];
   }
 
   private _evalReturnStmt(stmt: ReturnStatement, env: Environment): ReturnValue {

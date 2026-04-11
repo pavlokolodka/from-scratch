@@ -7,6 +7,7 @@ import type {
   ExpressionStatement,
   FunctionDeclaration,
   Identifier,
+  IndexExpression,
   InfixExpression,
   LetStatement,
   Node,
@@ -71,6 +72,10 @@ function stringify(node: Node): string {
       const arr = node as ArrayLiteral;
       return `(array ${arr.elements.map(stringify).join(' ')})`;
     }
+    case NodeKind.INDEX_EXPRESSION: {
+      const idx = node as IndexExpression;
+      return `(index ${stringify(idx.left)} ${stringify(idx.index)})`;
+    }
     case NodeKind.RETURN_STATEMENT: {
       const ret = node as ReturnStatement;
       return `(return ${stringify(ret.value)})`;
@@ -105,47 +110,66 @@ describe('Parser', () => {
     });
   });
 
-  describe('array literals', () => {
-    it.each([
-      { input: '[]', expected: '(array )' },
-      { input: '[1, 2, 3]', expected: '(array 1 2 3)' },
-      { input: '["a", "b"]', expected: '(array "a" "b")' },
-      { input: '[x, y]', expected: '(array x y)' },
-      { input: '[1 + 2, 3]', expected: '(array (+ 1 2) 3)' },
-      { input: '[1, [2, 3]]', expected: '(array 1 (array 2 3))' },
-    ])('should parse $input to $expected', ({ input, expected }) => {
-      expect(stringify(parse(input))).toBe(expected);
+  describe('array', () => {
+    describe('array literals', () => {
+      it.each([
+        { input: '[]', expected: '(array )' },
+        { input: '[1, 2, 3]', expected: '(array 1 2 3)' },
+        { input: '["a", "b"]', expected: '(array "a" "b")' },
+        { input: '[x, y]', expected: '(array x y)' },
+        { input: '[1 + 2, 3]', expected: '(array (+ 1 2) 3)' },
+        { input: '[1, [2, 3]]', expected: '(array 1 (array 2 3))' },
+      ])('should parse $input to $expected', ({ input, expected }) => {
+        expect(stringify(parse(input))).toBe(expected);
+      });
+
+      it.each([
+        { input: '[1, 2', desc: 'unclosed bracket' },
+        { input: '[1,]', desc: 'trailing comma' },
+        { input: '[,1]', desc: 'leading comma' },
+        { input: '[1,,2]', desc: 'double comma' },
+      ])('should throw for $desc: $input', ({ input }) => {
+        expect(() => parse(input)).toThrow();
+      });
     });
 
-    it.each([
-      { input: '[1, 2', desc: 'unclosed bracket' },
-      { input: '[1,]', desc: 'trailing comma' },
-      { input: '[,1]', desc: 'leading comma' },
-      { input: '[1,,2]', desc: 'double comma' },
-    ])('should throw for $desc: $input', ({ input }) => {
-      expect(() => parse(input)).toThrow();
-    });
-  });
+    describe('let statements', () => {
+      it.each([
+        { input: 'let x = 5;', expected: '(let x 5)' },
+        { input: 'let result = 2 + 3;', expected: '(let result (+ 2 3))' },
+        { input: 'let z = x * y;', expected: '(let z (* x y))' },
+        { input: 'let s = "hello";', expected: '(let s "hello")' },
+        { input: 'let a = [1, 2, 3];', expected: '(let a (array 1 2 3))' },
+        { input: 'let a = ["x", "y"];', expected: '(let a (array "x" "y"))' },
+        { input: 'let a = [];', expected: '(let a (array ))' },
+      ])('should parse $input to $expected', ({ input, expected }) => {
+        expect(stringify(parse(input))).toBe(expected);
+      });
 
-  describe('let statements', () => {
-    it.each([
-      { input: 'let x = 5;', expected: '(let x 5)' },
-      { input: 'let result = 2 + 3;', expected: '(let result (+ 2 3))' },
-      { input: 'let z = x * y;', expected: '(let z (* x y))' },
-      { input: 'let s = "hello";', expected: '(let s "hello")' },
-      { input: 'let a = [1, 2, 3];', expected: '(let a (array 1 2 3))' },
-      { input: 'let a = ["x", "y"];', expected: '(let a (array "x" "y"))' },
-      { input: 'let a = [];', expected: '(let a (array ))' },
-    ])('should parse $input to $expected', ({ input, expected }) => {
-      expect(stringify(parse(input))).toBe(expected);
+      it.each([
+        { input: 'let;', desc: 'missing identifier' },
+        { input: 'let = 5;', desc: 'missing identifier' },
+        { input: 'let x;', desc: 'missing value' },
+      ])('should throw for $desc: $input', ({ input }) => {
+        expect(() => parse(input)).toThrow();
+      });
     });
 
-    it.each([
-      { input: 'let;', desc: 'missing identifier' },
-      { input: 'let = 5;', desc: 'missing identifier' },
-      { input: 'let x;', desc: 'missing value' },
-    ])('should throw for $desc: $input', ({ input }) => {
-      expect(() => parse(input)).toThrow();
+    describe('index expressions', () => {
+      it.each([
+        { input: 'arr[0]', expected: '(index arr 0)' },
+        { input: 'arr[1]', expected: '(index arr 1)' },
+        { input: 'arr[x]', expected: '(index arr x)' },
+        { input: 'arr[1 + 2]', expected: '(index arr (+ 1 2))' },
+        { input: '[1, 2, 3][0]', expected: '(index (array 1 2 3) 0)' },
+        { input: 'arr[0] + arr[1]', expected: '(+ (index arr 0) (index arr 1))' },
+      ])('should parse $input to $expected', ({ input, expected }) => {
+        expect(stringify(parse(input))).toBe(expected);
+      });
+
+      it('should throw for missing closing bracket', () => {
+        expect(() => parse('arr[0')).toThrow('Missing closing bracket in index expression');
+      });
     });
   });
 

@@ -614,6 +614,74 @@ describe('Lexer', () => {
     });
   });
 
+  describe('array index access', () => {
+    it('should tokenize simple index access arr[0]', () => {
+      const input = `arr[0]`;
+      const tests = [
+        { type: TokenType.IDENT, literal: 'arr', line: 1 },
+        { type: TokenType.LBRACKET, literal: '[', line: 1 },
+        { type: TokenType.NUMBER, literal: '0', line: 1 },
+        { type: TokenType.RBRACKET, literal: ']', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+
+    it('should tokenize index access with expression index arr[1 + 2]', () => {
+      const input = `arr[1 + 2]`;
+      const tests = [
+        { type: TokenType.IDENT, literal: 'arr', line: 1 },
+        { type: TokenType.LBRACKET, literal: '[', line: 1 },
+        { type: TokenType.NUMBER, literal: '1', line: 1 },
+        { type: TokenType.PLUS, literal: '+', line: 1 },
+        { type: TokenType.NUMBER, literal: '2', line: 1 },
+        { type: TokenType.RBRACKET, literal: ']', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+
+    it('should tokenize let with index access let x = arr[0]', () => {
+      const input = `let x = arr[0];`;
+      const tests = [
+        { type: TokenType.LET, literal: 'let', line: 1 },
+        { type: TokenType.IDENT, literal: 'x', line: 1 },
+        { type: TokenType.ASSIGN, literal: '=', line: 1 },
+        { type: TokenType.IDENT, literal: 'arr', line: 1 },
+        { type: TokenType.LBRACKET, literal: '[', line: 1 },
+        { type: TokenType.NUMBER, literal: '0', line: 1 },
+        { type: TokenType.RBRACKET, literal: ']', line: 1 },
+        { type: TokenType.SEMICOLON, literal: ';', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+  });
+
   it('should tokenize illegal tokens', () => {
     const input = `@ # $`;
     const tests = [
