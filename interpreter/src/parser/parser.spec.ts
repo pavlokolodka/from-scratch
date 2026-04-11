@@ -13,6 +13,7 @@ import type {
   InfixExpression,
   LetStatement,
   Node,
+  NullLiteral,
   NumberLiteral,
   Program,
   ReturnStatement,
@@ -50,6 +51,8 @@ function stringify(node: Node): string {
       const bool = node as BooleanLiteral;
       return `${bool.value}`;
     }
+    case NodeKind.NULL_LITERAL:
+      return 'nil';
     case NodeKind.IDENTIFIER:
       return (node as Identifier).value;
     case NodeKind.LET_STATEMENT: {
@@ -151,6 +154,27 @@ describe('Parser', () => {
 
     it('should parse const declaration with boolean', () => {
       expect(stringify(parse('const debug = true;'))).toBe('(const debug true)');
+    });
+  });
+
+  describe('null literal', () => {
+    it('should parse nil to nil', () => {
+      expect(stringify(parse('nil'))).toBe('nil');
+    });
+
+    it('should parse nil AST node fields', () => {
+      const program = parse('nil');
+      const expr = (program.statements[0] as ExpressionStatement).expression as NullLiteral;
+      expect(expr.kind).toBe(NodeKind.NULL_LITERAL);
+      expect(expr.tokenLiteral()).toBe('nil');
+    });
+
+    it('should parse let declaration with nil', () => {
+      expect(stringify(parse('let x = nil;'))).toBe('(let x nil)');
+    });
+
+    it('should parse const declaration with nil', () => {
+      expect(stringify(parse('const x = nil;'))).toBe('(const x nil)');
     });
   });
 

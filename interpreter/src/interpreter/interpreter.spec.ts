@@ -139,6 +139,12 @@ describe('Interpreter', () => {
     });
   });
 
+  describe('null literal', () => {
+    it('should evaluate nil to null', () => {
+      expect(evaluate('nil')).toEqual({ type: RuntimeType.NULL, value: null });
+    });
+  });
+
   describe('array', () => {
     it('should evaluate an empty array', () => {
       const result = evaluate('[]');
@@ -175,6 +181,13 @@ describe('Interpreter', () => {
           { type: RuntimeType.BOOLEAN, value: false },
         ],
       },
+      {
+        input: '[nil, nil]',
+        expected: [
+          { type: RuntimeType.NULL, value: null },
+          { type: RuntimeType.NULL, value: null },
+        ],
+      },
     ])('should evaluate $input to array of values', ({ input, expected }) => {
       const result = evaluate(input);
       expect(result).toEqual({ type: RuntimeType.ARRAY, value: expected });
@@ -205,6 +218,7 @@ describe('Interpreter', () => {
         { input: '["a", "b", "c"][0]', expected: { type: RuntimeType.STRING, value: 'a' } },
         { input: '["a", "b", "c"][2]', expected: { type: RuntimeType.STRING, value: 'c' } },
         { input: '[true, false, true][1]', expected: { type: RuntimeType.BOOLEAN, value: false } },
+        { input: '[nil, nil, nil][0]', expected: { type: RuntimeType.NULL, value: null } },
       ])('should evaluate $input to expected value', ({ input, expected }) => {
         expect(evaluate(input)).toEqual(expected);
       });
@@ -278,6 +292,11 @@ describe('Interpreter', () => {
           desc: 'boolean',
           input: 'let arr = [true, false]; arr[0] = false; arr[0]',
           expected: { type: RuntimeType.BOOLEAN, value: false },
+        },
+        {
+          desc: 'null',
+          input: 'let arr = [1, 2]; arr[0] = nil; arr[0]',
+          expected: { type: RuntimeType.NULL, value: null },
         },
       ])('should mutate element with $desc value', ({ input, expected }) => {
         expect(evaluateAll(input)).toEqual(expected);
@@ -375,6 +394,12 @@ describe('Interpreter', () => {
       });
     });
 
+    describe('null', () => {
+      it('should declare and look up nil', () => {
+        expect(evaluateAll('let a = nil; a')).toEqual({ type: RuntimeType.NULL, value: null });
+      });
+    });
+
     describe('array', () => {
       it.each([
         { input: 'let a = [5]; a', expected: 5 },
@@ -456,6 +481,12 @@ describe('Interpreter', () => {
       ])('should declare and look up $input', ({ input, expected }) => {
         const result = evaluateAll(input);
         expect(result).toEqual({ type: RuntimeType.BOOLEAN, value: expected });
+      });
+    });
+
+    describe('null', () => {
+      it('should declare and look up nil', () => {
+        expect(evaluateAll('const a = nil; a')).toEqual({ type: RuntimeType.NULL, value: null });
       });
     });
 
@@ -627,6 +658,11 @@ describe('Interpreter', () => {
               ],
             },
           },
+          {
+            desc: 'null',
+            input: 'let x = nil; fn getX() { return x }; getX()',
+            expected: { type: RuntimeType.NULL, value: null },
+          },
         ])('should close over $desc outer scope variable', ({ input, expected }) => {
           expect(evaluateAll(input)).toEqual(expected);
         });
@@ -661,6 +697,11 @@ describe('Interpreter', () => {
           },
           { input: 'fn yes() { return true }; yes()', expected: true, type: RuntimeType.BOOLEAN },
           { input: 'fn no() { return false }; no()', expected: false, type: RuntimeType.BOOLEAN },
+          {
+            input: 'fn nothing() { return nil }; nothing()',
+            expected: null,
+            type: RuntimeType.NULL,
+          },
         ])('should return expression value from function for $input', ({
           input,
           expected,
@@ -714,6 +755,7 @@ describe('Interpreter', () => {
       { newline: 'let a = [1, 2]\na', semi: 'let a = [1, 2]; a' },
       { newline: 'let a = "hello"\na', semi: 'let a = "hello"; a' },
       { newline: 'let a = true\na', semi: 'let a = true; a' },
+      { newline: 'let a = nil\na', semi: 'let a = nil; a' },
     ])('should produce same result for "$semi"', ({ newline, semi }) => {
       expect(evaluateAll(semi)).toEqual(evaluateAll(newline));
     });

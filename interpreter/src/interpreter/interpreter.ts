@@ -21,6 +21,7 @@ import { ArrayValue } from './values/array.value';
 import { BooleanValue } from './values/boolean.value';
 import { FunctionValue } from './values/function.value';
 import { IdentifierValue, IdentifierValueInternal } from './values/identifier.value';
+import { NullValue } from './values/null.value';
 import { NumberValue } from './values/number.value';
 import { ReturnValue } from './values/return.value';
 import { StringValue } from './values/string.value';
@@ -33,6 +34,7 @@ export class Interpreter {
     if (isNode(ast, NodeKind.NUMBER_LITERAL)) return new NumberValue(ast.value);
     if (isNode(ast, NodeKind.STRING_LITERAL)) return new StringValue(ast.value);
     if (isNode(ast, NodeKind.BOOLEAN_LITERAL)) return new BooleanValue(ast.value);
+    if (isNode(ast, NodeKind.NULL_LITERAL)) return NullValue;
     if (isNode(ast, NodeKind.ARRAY_LITERAL)) return this._evalArrayLiteral(ast, env);
     if (isNode(ast, NodeKind.INDEX_EXPRESSION)) return this._evalIndexExpression(ast, env);
     if (isNode(ast, NodeKind.LET_STATEMENT) || isNode(ast, NodeKind.CONST_STATEMENT))

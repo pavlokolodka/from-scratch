@@ -4,6 +4,7 @@ import type { CallExpression } from './expressions/call.expression';
 import type { Identifier } from './expressions/identifier.expression';
 import type { IndexExpression } from './expressions/index-expression.expression';
 import type { InfixExpression } from './expressions/infix.expression';
+import type { NullLiteral } from './expressions/null-literal.expression';
 import type { NumberLiteral } from './expressions/number-literal.expression';
 import type { StringLiteral } from './expressions/string-literal.expression';
 import type { Program } from './program.node';
@@ -35,7 +36,7 @@ export enum NodeKind {
   BOOLEAN_LITERAL = 'BOOLEAN_LITERAL',
   STRING_LITERAL = 'STRING_LITERAL',
   CHARACTER_LITERAL = 'CHARACTER_LITERAL',
-  NIL_LITERAL = 'NIL_LITERAL',
+  NULL_LITERAL = 'NULL_LITERAL',
   ARRAY_LITERAL = 'ARRAY_LITERAL',
 
   PREFIX_EXPRESSION = 'PREFIX_EXPRESSION',
@@ -61,6 +62,7 @@ export type NodeKindMap = {
   [NodeKind.NUMBER_LITERAL]: NumberLiteral;
   [NodeKind.STRING_LITERAL]: StringLiteral;
   [NodeKind.BOOLEAN_LITERAL]: BooleanLiteral;
+  [NodeKind.NULL_LITERAL]: NullLiteral;
   [NodeKind.ARRAY_LITERAL]: ArrayLiteral;
   [NodeKind.INFIX_EXPRESSION]: InfixExpression;
   [NodeKind.INDEX_EXPRESSION]: IndexExpression;

@@ -3,6 +3,7 @@ export enum RuntimeType {
   STRING = 'STRING',
   BOOLEAN = 'BOOLEAN',
   IDENTIFIER = 'IDENTIFIER',
+  NULL = 'NULL',
   VOID = 'VOID',
   FUNCTION = 'FUNCTION',
   ARRAY = 'ARRAY',

@@ -17,6 +17,7 @@ import {
   isNode,
   LetStatement,
   NodeKind,
+  NullLiteral,
   NumberLiteral,
   Program,
   ReturnStatement,
@@ -399,6 +400,8 @@ export class Parser {
       case TokenType.TRUE:
       case TokenType.FALSE:
         return new BooleanLiteral(this._currentToken);
+      case TokenType.NIL:
+        return new NullLiteral(this._currentToken);
       default:
         return null;
     }
@@ -556,6 +559,7 @@ export class Parser {
       this._expectPeek(TokenType.NUMBER) ||
       this._expectPeek(TokenType.TRUE) ||
       this._expectPeek(TokenType.FALSE) ||
+      this._expectPeek(TokenType.NIL) ||
       this._expectPeek(TokenType.LBRACKET)
     );
   }
