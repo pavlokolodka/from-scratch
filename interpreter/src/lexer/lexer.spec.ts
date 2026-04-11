@@ -49,6 +49,59 @@ describe('Lexer', () => {
     });
   });
 
+  describe('booleans', () => {
+    it.each([
+      { input: 'true', expected: TokenType.TRUE },
+      { input: 'false', expected: TokenType.FALSE },
+    ])('should tokenize $input as $expected', ({ input, expected }) => {
+      const tokens = new Lexer(input).tokenize();
+      expect(tokens[0].type).toBe(expected);
+      expect(tokens[0].literal).toBe(input);
+    });
+
+    it('should tokenize let b = true', () => {
+      const input = `let b = true;`;
+      const tests = [
+        { type: TokenType.LET, literal: 'let', line: 1 },
+        { type: TokenType.IDENT, literal: 'b', line: 1 },
+        { type: TokenType.ASSIGN, literal: '=', line: 1 },
+        { type: TokenType.TRUE, literal: 'true', line: 1 },
+        { type: TokenType.SEMICOLON, literal: ';', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+
+    it('should tokenize let b = false', () => {
+      const input = `let b = false;`;
+      const tests = [
+        { type: TokenType.LET, literal: 'let', line: 1 },
+        { type: TokenType.IDENT, literal: 'b', line: 1 },
+        { type: TokenType.ASSIGN, literal: '=', line: 1 },
+        { type: TokenType.FALSE, literal: 'false', line: 1 },
+        { type: TokenType.SEMICOLON, literal: ';', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+  });
+
   describe('let keyword', () => {
     it('should tokenize let declaration', () => {
       const input = `let x = 5;`;

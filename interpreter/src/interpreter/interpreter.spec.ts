@@ -130,6 +130,15 @@ describe('Interpreter', () => {
     });
   });
 
+  describe('boolean literals', () => {
+    it.each([
+      { input: 'true', expected: true },
+      { input: 'false', expected: false },
+    ])('should evaluate $input to $expected', ({ input, expected }) => {
+      expect(evaluate(input)).toEqual({ type: RuntimeType.BOOLEAN, value: expected });
+    });
+  });
+
   describe('array', () => {
     it('should evaluate an empty array', () => {
       const result = evaluate('[]');
@@ -157,6 +166,13 @@ describe('Interpreter', () => {
         expected: [
           { type: RuntimeType.NUMBER, value: 3 },
           { type: RuntimeType.NUMBER, value: 12 },
+        ],
+      },
+      {
+        input: '[true, false]',
+        expected: [
+          { type: RuntimeType.BOOLEAN, value: true },
+          { type: RuntimeType.BOOLEAN, value: false },
         ],
       },
     ])('should evaluate $input to array of values', ({ input, expected }) => {
@@ -188,6 +204,7 @@ describe('Interpreter', () => {
         { input: '[1, 2, 3][2]', expected: { type: RuntimeType.NUMBER, value: 3 } },
         { input: '["a", "b", "c"][0]', expected: { type: RuntimeType.STRING, value: 'a' } },
         { input: '["a", "b", "c"][2]', expected: { type: RuntimeType.STRING, value: 'c' } },
+        { input: '[true, false, true][1]', expected: { type: RuntimeType.BOOLEAN, value: false } },
       ])('should evaluate $input to expected value', ({ input, expected }) => {
         expect(evaluate(input)).toEqual(expected);
       });
@@ -257,6 +274,11 @@ describe('Interpreter', () => {
             ],
           },
         },
+        {
+          desc: 'boolean',
+          input: 'let arr = [true, false]; arr[0] = false; arr[0]',
+          expected: { type: RuntimeType.BOOLEAN, value: false },
+        },
       ])('should mutate element with $desc value', ({ input, expected }) => {
         expect(evaluateAll(input)).toEqual(expected);
       });
@@ -304,6 +326,7 @@ describe('Interpreter', () => {
       it.each([
         { desc: 'number', input: 'let x = 5; x[0] = 99', type: 'NUMBER' },
         { desc: 'string', input: 'let x = "hi"; x[0] = 99', type: 'STRING' },
+        { desc: 'boolean', input: 'let x = true; x[0] = 99', type: 'BOOLEAN' },
       ])('should throw when mutating a non-array ($desc)', ({ input, type }) => {
         expect(() => evaluateAll(input)).toThrow(`Index operator not supported for type ${type}`);
       });
@@ -341,6 +364,17 @@ describe('Interpreter', () => {
       });
     });
 
+    describe('boolean', () => {
+      it.each([
+        { input: 'let a = true; a', expected: true },
+        { input: 'let b = false; b', expected: false },
+        { input: 'let c = true; let d = false; c', expected: true },
+      ])('should declare and look up $input', ({ input, expected }) => {
+        const result = evaluateAll(input);
+        expect(result).toEqual({ type: RuntimeType.BOOLEAN, value: expected });
+      });
+    });
+
     describe('array', () => {
       it.each([
         { input: 'let a = [5]; a', expected: 5 },
@@ -372,6 +406,7 @@ describe('Interpreter', () => {
         it.each([
           { input: 'let a = 5; a = 10; a', expected: 10, type: RuntimeType.NUMBER },
           { input: 'let a = "5"; a = "10"; a', expected: '10', type: RuntimeType.STRING },
+          { input: 'let a = true; a = false; a', expected: false, type: RuntimeType.BOOLEAN },
         ])('should reassign: $input', ({ input, expected, type }) => {
           const result = evaluateAll(input);
           expect(result).toEqual({ type, value: expected });
@@ -413,6 +448,17 @@ describe('Interpreter', () => {
       });
     });
 
+    describe('boolean', () => {
+      it.each([
+        { input: 'const a = true; a', expected: true },
+        { input: 'const b = false; b', expected: false },
+        { input: 'const c = true; const d = false; c', expected: true },
+      ])('should declare and look up $input', ({ input, expected }) => {
+        const result = evaluateAll(input);
+        expect(result).toEqual({ type: RuntimeType.BOOLEAN, value: expected });
+      });
+    });
+
     describe('array', () => {
       it.each([
         { input: 'const a = [5]; a', expected: 5 },
@@ -444,6 +490,7 @@ describe('Interpreter', () => {
         it.each([
           { input: 'const a = 5; a = 10' },
           { input: 'const a = "5"; a = "10"' },
+          { input: 'const a = true; a = false' },
           { input: 'const a = [1]; a = [2]' },
         ])('should throw when reassigning: $input', ({ input }) => {
           expect(() => evaluateAll(input)).toThrow();
@@ -553,22 +600,74 @@ describe('Interpreter', () => {
           expect(result).toEqual({ type: RuntimeType.NUMBER, value: 7 });
         });
 
-        it('should close over outer scope variables', () => {
-          const input = 'let n = 10; fn addN(x) { return x + n }; addN(5)';
-          const result = evaluateAll(input);
-          expect(result).toEqual({ type: RuntimeType.NUMBER, value: 15 });
+        it.each([
+          {
+            desc: 'number',
+            input: 'let n = 10; fn addN(x) { return x + n }; addN(5)',
+            expected: { type: RuntimeType.NUMBER, value: 15 },
+          },
+          {
+            desc: 'string',
+            input: 'let greeting = "hi"; fn getGreeting() { return greeting }; getGreeting()',
+            expected: { type: RuntimeType.STRING, value: 'hi' },
+          },
+          {
+            desc: 'boolean',
+            input: 'let flag = true; fn getFlag() { return flag }; getFlag()',
+            expected: { type: RuntimeType.BOOLEAN, value: true },
+          },
+          {
+            desc: 'array',
+            input: 'let arr = [1, 2]; fn getArr() { return arr }; getArr()',
+            expected: {
+              type: RuntimeType.ARRAY,
+              value: [
+                { type: RuntimeType.NUMBER, value: 1 },
+                { type: RuntimeType.NUMBER, value: 2 },
+              ],
+            },
+          },
+        ])('should close over $desc outer scope variable', ({ input, expected }) => {
+          expect(evaluateAll(input)).toEqual(expected);
         });
       });
 
       describe('return statements', () => {
         it.each([
-          { input: 'fn double(x) { return x * 2 }; double(5)', expected: 10 },
-          { input: 'fn add(a, b) { return a + b }; add(3, 4)', expected: 7 },
-          { input: 'fn square(x) { return x * x }; square(4)', expected: 16 },
-          { input: 'fn sum(a, b, c) { return a + b + c }; sum(1, 2, 3)', expected: 6 },
-        ])('should return expression value from function for $input', ({ input, expected }) => {
+          {
+            input: 'fn double(x) { return x * 2 }; double(5)',
+            expected: 10,
+            type: RuntimeType.NUMBER,
+          },
+          {
+            input: 'fn add(a, b) { return a + b }; add(3, 4)',
+            expected: 7,
+            type: RuntimeType.NUMBER,
+          },
+          {
+            input: 'fn square(x) { return x * x }; square(4)',
+            expected: 16,
+            type: RuntimeType.NUMBER,
+          },
+          {
+            input: 'fn sum(a, b, c) { return a + b + c }; sum(1, 2, 3)',
+            expected: 6,
+            type: RuntimeType.NUMBER,
+          },
+          {
+            input: 'fn greet(name) { return name }; greet("hi")',
+            expected: 'hi',
+            type: RuntimeType.STRING,
+          },
+          { input: 'fn yes() { return true }; yes()', expected: true, type: RuntimeType.BOOLEAN },
+          { input: 'fn no() { return false }; no()', expected: false, type: RuntimeType.BOOLEAN },
+        ])('should return expression value from function for $input', ({
+          input,
+          expected,
+          type,
+        }) => {
           const result = evaluateAll(input);
-          expect(result).toEqual({ type: RuntimeType.NUMBER, value: expected });
+          expect(result).toEqual({ type, value: expected });
         });
 
         it('should return early and not evaluate subsequent statements', () => {
@@ -614,6 +713,7 @@ describe('Interpreter', () => {
       { newline: 'const x = 42\nx', semi: 'const x = 42; x' },
       { newline: 'let a = [1, 2]\na', semi: 'let a = [1, 2]; a' },
       { newline: 'let a = "hello"\na', semi: 'let a = "hello"; a' },
+      { newline: 'let a = true\na', semi: 'let a = true; a' },
     ])('should produce same result for "$semi"', ({ newline, semi }) => {
       expect(evaluateAll(semi)).toEqual(evaluateAll(newline));
     });

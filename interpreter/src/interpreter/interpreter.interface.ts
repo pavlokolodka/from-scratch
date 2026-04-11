@@ -1,6 +1,7 @@
 export enum RuntimeType {
   NUMBER = 'NUMBER',
   STRING = 'STRING',
+  BOOLEAN = 'BOOLEAN',
   IDENTIFIER = 'IDENTIFIER',
   VOID = 'VOID',
   FUNCTION = 'FUNCTION',

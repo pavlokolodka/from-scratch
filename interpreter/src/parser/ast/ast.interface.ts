@@ -1,4 +1,5 @@
 import type { ArrayLiteral } from './expressions/array-literal.expression';
+import type { BooleanLiteral } from './expressions/boolean-literal.expression';
 import type { CallExpression } from './expressions/call.expression';
 import type { Identifier } from './expressions/identifier.expression';
 import type { IndexExpression } from './expressions/index-expression.expression';
@@ -59,6 +60,7 @@ export type NodeKindMap = {
   [NodeKind.IDENTIFIER]: Identifier;
   [NodeKind.NUMBER_LITERAL]: NumberLiteral;
   [NodeKind.STRING_LITERAL]: StringLiteral;
+  [NodeKind.BOOLEAN_LITERAL]: BooleanLiteral;
   [NodeKind.ARRAY_LITERAL]: ArrayLiteral;
   [NodeKind.INFIX_EXPRESSION]: InfixExpression;
   [NodeKind.INDEX_EXPRESSION]: IndexExpression;

@@ -5,6 +5,7 @@ import {
   ArrayLiteral,
   AssignStatement,
   BlockStatement,
+  BooleanLiteral,
   CallExpression,
   ConstStatement,
   ExpressionStatement,
@@ -395,6 +396,9 @@ export class Parser {
         return this._parseLParen();
       case TokenType.LBRACKET:
         return this._parseArray();
+      case TokenType.TRUE:
+      case TokenType.FALSE:
+        return new BooleanLiteral(this._currentToken);
       default:
         return null;
     }
@@ -550,6 +554,8 @@ export class Parser {
       this._expectPeek(TokenType.IDENT) ||
       this._expectPeek(TokenType.STRING) ||
       this._expectPeek(TokenType.NUMBER) ||
+      this._expectPeek(TokenType.TRUE) ||
+      this._expectPeek(TokenType.FALSE) ||
       this._expectPeek(TokenType.LBRACKET)
     );
   }

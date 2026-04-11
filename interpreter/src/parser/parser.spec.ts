@@ -2,6 +2,7 @@ import type {
   ArrayLiteral,
   AssignStatement,
   BlockStatement,
+  BooleanLiteral,
   CallExpression,
   ConstStatement,
   ExpressionStatement,
@@ -44,6 +45,10 @@ function stringify(node: Node): string {
       const str = node as StringLiteral;
       expect(str.value).toEqual(expect.any(String));
       return `"${str.value}"`;
+    }
+    case NodeKind.BOOLEAN_LITERAL: {
+      const bool = node as BooleanLiteral;
+      return `${bool.value}`;
     }
     case NodeKind.IDENTIFIER:
       return (node as Identifier).value;
@@ -112,6 +117,40 @@ describe('Parser', () => {
       { input: '""', expected: '""' },
     ])('should parse $input to $expected', ({ input, expected }) => {
       expect(stringify(parse(input))).toBe(expected);
+    });
+  });
+
+  describe('boolean literals', () => {
+    it.each([
+      { input: 'true', expected: 'true' },
+      { input: 'false', expected: 'false' },
+    ])('should parse $input to $expected', ({ input, expected }) => {
+      expect(stringify(parse(input))).toBe(expected);
+    });
+
+    it('should parse boolean AST node fields for true', () => {
+      const program = parse('true');
+      const expr = (program.statements[0] as ExpressionStatement).expression as BooleanLiteral;
+      expect(expr.kind).toBe(NodeKind.BOOLEAN_LITERAL);
+      expect(expr.value).toBe(true);
+      expect(expr.tokenLiteral()).toBe('true');
+    });
+
+    it('should parse boolean AST node fields for false', () => {
+      const program = parse('false');
+      const expr = (program.statements[0] as ExpressionStatement).expression as BooleanLiteral;
+      expect(expr.kind).toBe(NodeKind.BOOLEAN_LITERAL);
+      expect(expr.value).toBe(false);
+      expect(expr.tokenLiteral()).toBe('false');
+    });
+
+    it('should parse let declaration with boolean', () => {
+      expect(stringify(parse('let flag = true;'))).toBe('(let flag true)');
+      expect(stringify(parse('let flag = false;'))).toBe('(let flag false)');
+    });
+
+    it('should parse const declaration with boolean', () => {
+      expect(stringify(parse('const debug = true;'))).toBe('(const debug true)');
     });
   });
 
