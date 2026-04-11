@@ -233,6 +233,87 @@ describe('Interpreter', () => {
         );
       });
     });
+
+    describe('array mutation', () => {
+      it.each([
+        {
+          desc: 'number',
+          input: 'let arr = [1, 2, 3]; arr[0] = 99; arr[0]',
+          expected: { type: RuntimeType.NUMBER, value: 99 },
+        },
+        {
+          desc: 'string',
+          input: 'let arr = ["a", "b", "c"]; arr[1] = "z"; arr[1]',
+          expected: { type: RuntimeType.STRING, value: 'z' },
+        },
+        {
+          desc: 'array',
+          input: 'let arr = [1, 2, 3]; arr[2] = [4, 5]; arr[2]',
+          expected: {
+            type: RuntimeType.ARRAY,
+            value: [
+              { type: RuntimeType.NUMBER, value: 4 },
+              { type: RuntimeType.NUMBER, value: 5 },
+            ],
+          },
+        },
+      ])('should mutate element with $desc value', ({ input, expected }) => {
+        expect(evaluateAll(input)).toEqual(expected);
+      });
+
+      it('should mutate using an expression index', () => {
+        const result = evaluateAll('let arr = [10, 20, 30]; arr[1 + 1] = 99; arr[2]');
+        expect(result).toEqual({ type: RuntimeType.NUMBER, value: 99 });
+      });
+
+      it('should mutate using an expression value', () => {
+        const result = evaluateAll('let arr = [1, 2, 3]; arr[1] = arr[0] + arr[2]; arr[1]');
+        expect(result).toEqual({ type: RuntimeType.NUMBER, value: 4 });
+      });
+
+      it('should not affect sibling elements when mutating one', () => {
+        evaluateAll('let arr = [1, 2, 3]; arr[1] = 99');
+        const first = evaluateAll('let arr = [1, 2, 3]; arr[1] = 99; arr[0]');
+        const last = evaluateAll('let arr = [1, 2, 3]; arr[1] = 99; arr[2]');
+        expect(first).toEqual({ type: RuntimeType.NUMBER, value: 1 });
+        expect(last).toEqual({ type: RuntimeType.NUMBER, value: 3 });
+      });
+
+      it('should mutate the same index twice (double mutation)', () => {
+        const result = evaluateAll('let arr = [1, 2, 3]; arr[0] = 10; arr[0] = 20; arr[0]');
+        expect(result).toEqual({ type: RuntimeType.NUMBER, value: 20 });
+      });
+
+      it('should reflect mutation when read via index expression in an expression', () => {
+        const result = evaluateAll('let arr = [1, 2, 3]; arr[0] = 5; arr[0] + arr[1]');
+        expect(result).toEqual({ type: RuntimeType.NUMBER, value: 7 });
+      });
+
+      it('should throw for out-of-bounds index', () => {
+        expect(() => evaluateAll('let arr = [1, 2]; arr[5] = 99')).toThrow(
+          'Index out of bounds: 5',
+        );
+      });
+
+      it('should throw for negative index', () => {
+        expect(() => evaluateAll('let arr = [1, 2]; arr[0 - 1] = 99')).toThrow(
+          'Index out of bounds: -1',
+        );
+      });
+
+      it.each([
+        { desc: 'number', input: 'let x = 5; x[0] = 99', type: 'NUMBER' },
+        { desc: 'string', input: 'let x = "hi"; x[0] = 99', type: 'STRING' },
+      ])('should throw when mutating a non-array ($desc)', ({ input, type }) => {
+        expect(() => evaluateAll(input)).toThrow(`Index operator not supported for type ${type}`);
+      });
+
+      it('should throw for non-number index', () => {
+        expect(() => evaluateAll('let arr = [1, 2]; arr["a"] = 99')).toThrow(
+          'Index must be a number, got STRING',
+        );
+      });
+    });
   });
 
   describe('let declaration', () => {

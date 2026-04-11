@@ -3,5 +3,6 @@ export * from './block.statement';
 export * from './const.statement';
 export * from './expression.statement';
 export * from './function-declaration.statement';
+export * from './index-assign.statement';
 export * from './let.statement';
 export * from './return.statement';

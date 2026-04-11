@@ -7,6 +7,7 @@ import type {
   ExpressionStatement,
   FunctionDeclaration,
   Identifier,
+  IndexAssignStatement,
   IndexExpression,
   InfixExpression,
   LetStatement,
@@ -75,6 +76,10 @@ function stringify(node: Node): string {
     case NodeKind.INDEX_EXPRESSION: {
       const idx = node as IndexExpression;
       return `(index ${stringify(idx.left)} ${stringify(idx.index)})`;
+    }
+    case NodeKind.INDEX_ASSIGN_STATEMENT: {
+      const ia = node as IndexAssignStatement;
+      return `(index-assign ${stringify(ia.left)} ${stringify(ia.right)})`;
     }
     case NodeKind.RETURN_STATEMENT: {
       const ret = node as ReturnStatement;
@@ -169,6 +174,26 @@ describe('Parser', () => {
 
       it('should throw for missing closing bracket', () => {
         expect(() => parse('arr[0')).toThrow('Missing closing bracket in index expression');
+      });
+    });
+
+    describe('index assign statements', () => {
+      it.each([
+        { input: 'arr[0] = 99', expected: '(index-assign (index arr 0) 99)' },
+        { input: 'arr[1] = 42', expected: '(index-assign (index arr 1) 42)' },
+        { input: 'arr[0] = "hello"', expected: '(index-assign (index arr 0) "hello")' },
+        { input: 'arr[i] = x + 1', expected: '(index-assign (index arr i) (+ x 1))' },
+      ])('should parse $input to $expected', ({ input, expected }) => {
+        expect(stringify(parse(input))).toBe(expected);
+      });
+
+      it('should parse AST node fields for arr[0] = 5', () => {
+        const stmt = parse('arr[0] = 5').statements[0] as IndexAssignStatement;
+        expect(stmt.kind).toBe(NodeKind.INDEX_ASSIGN_STATEMENT);
+        expect(stmt.tokenLiteral()).toBe('arr');
+        expect((stmt.left.left as Identifier).value).toBe('arr');
+        expect((stmt.left.index as NumberLiteral).value).toBe(0);
+        expect((stmt.right as NumberLiteral).value).toBe(5);
       });
     });
   });

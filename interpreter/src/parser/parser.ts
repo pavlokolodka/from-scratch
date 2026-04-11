@@ -10,9 +10,12 @@ import {
   ExpressionStatement,
   FunctionDeclaration,
   Identifier,
+  IndexAssignStatement,
   IndexExpression,
   InfixExpression,
+  isNode,
   LetStatement,
+  NodeKind,
   NumberLiteral,
   Program,
   ReturnStatement,
@@ -294,15 +297,38 @@ export class Parser {
     return new ConstStatement(token, identifier, value);
   }
 
-  private _parseExpressionStatement(): ExpressionStatement {
+  private _parseExpressionStatement(): Statement {
     const token = this._currentToken;
     const expression = this._parseExpression(this._lowPrecedence);
+
+    if (isNode(expression, NodeKind.INDEX_EXPRESSION) && this._peekTokenIs(TokenType.ASSIGN)) {
+      return this._parseIndexAssignStatement(token, expression);
+    }
 
     if (this._peekTokenIs(TokenType.SEMICOLON)) {
       this._nextToken();
     }
 
     return new ExpressionStatement(token, expression);
+  }
+
+  private _parseIndexAssignStatement(t: Token, expression: IndexExpression): IndexAssignStatement {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.RBRACKET),
+        `_parseIndexAssignStatement called with non-RBRACKET token: ${toDebugToken(this._currentToken)}`,
+      );
+
+    this._nextToken();
+    this._nextToken();
+
+    const value = this._parseExpression(this._lowPrecedence);
+
+    if (this._peekTokenIs(TokenType.SEMICOLON)) {
+      this._nextToken();
+    }
+
+    return new IndexAssignStatement(t, expression, value);
   }
 
   private _parseAssignStatement(): AssignStatement {
@@ -425,7 +451,8 @@ export class Parser {
   }
 
   private _parseCallExpression(left: Expression): CallExpression {
-    __DEV__ && assert.ok(left instanceof Identifier, `Expected function name, got ${left.kind}`);
+    __DEV__ &&
+      assert.ok(isNode(left, NodeKind.IDENTIFIER), `Expected function name, got ${left.kind}`);
     __DEV__ &&
       assert.ok(
         this._currTokenIs(TokenType.LPAREN),

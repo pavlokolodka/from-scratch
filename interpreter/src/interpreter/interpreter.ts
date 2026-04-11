@@ -4,19 +4,17 @@ import type {
   BlockStatement,
   CallExpression,
   ConstStatement,
-  ExpressionStatement,
   FunctionDeclaration,
   Identifier,
+  IndexAssignStatement,
   IndexExpression,
   InfixExpression,
   LetStatement,
   Node,
-  NumberLiteral,
   ReturnStatement,
-  StringLiteral,
 } from '../parser/ast';
 import type { RuntimeValue } from './interpreter.interface';
-import { NodeKind, NumberOperator } from '../parser/ast';
+import { isNode, NodeKind, NumberOperator } from '../parser/ast';
 import { Environment } from './environment';
 import { RuntimeType } from './interpreter.interface';
 import { ArrayValue } from './values/array.value';
@@ -30,37 +28,23 @@ import { VoidValue } from './values/void.value';
 export class Interpreter {
   private _callDepth = 0;
   eval(ast: Node, env: Environment): RuntimeValue {
-    switch (ast.kind) {
-      case NodeKind.NUMBER_LITERAL:
-        return new NumberValue((ast as NumberLiteral).value);
-      case NodeKind.STRING_LITERAL:
-        return new StringValue((ast as StringLiteral).value);
-      case NodeKind.ARRAY_LITERAL:
-        return this._evalArrayLiteral(ast as ArrayLiteral, env);
-      case NodeKind.INDEX_EXPRESSION:
-        return this._evalIndexExpression(ast as IndexExpression, env);
-      case NodeKind.LET_STATEMENT:
-      case NodeKind.CONST_STATEMENT:
-        return this._evalDeclareStmt(ast as LetStatement, env);
-      case NodeKind.ASSIGN_STATEMENT:
-        return this._evalAssignStmt(ast as AssignStatement, env);
-      case NodeKind.IDENTIFIER:
-        return this._evalIdentifier(ast as Identifier, env);
-      case NodeKind.INFIX_EXPRESSION:
-        return this._evalInfix(ast as InfixExpression, env);
-      case NodeKind.EXPRESSION_STATEMENT:
-        return this.eval((ast as ExpressionStatement).expression, env);
-      case NodeKind.BLOCK_STATEMENT:
-        return this._evalBlockStmt(ast as BlockStatement, env);
-      case NodeKind.FUNCTION_DECLARATION:
-        return this._evalFunctionStmt(ast as FunctionDeclaration, env);
-      case NodeKind.CALL_EXPRESSION:
-        return this._evalCallExpr(ast as CallExpression, env);
-      case NodeKind.RETURN_STATEMENT:
-        return this._evalReturnStmt(ast as ReturnStatement, env);
-      default:
-        throw new Error(`AST have no implementation ${JSON.stringify(ast)}`);
-    }
+    if (isNode(ast, NodeKind.NUMBER_LITERAL)) return new NumberValue(ast.value);
+    if (isNode(ast, NodeKind.STRING_LITERAL)) return new StringValue(ast.value);
+    if (isNode(ast, NodeKind.ARRAY_LITERAL)) return this._evalArrayLiteral(ast, env);
+    if (isNode(ast, NodeKind.INDEX_EXPRESSION)) return this._evalIndexExpression(ast, env);
+    if (isNode(ast, NodeKind.LET_STATEMENT) || isNode(ast, NodeKind.CONST_STATEMENT))
+      return this._evalDeclareStmt(ast, env);
+    if (isNode(ast, NodeKind.ASSIGN_STATEMENT)) return this._evalAssignStmt(ast, env);
+    if (isNode(ast, NodeKind.INDEX_ASSIGN_STATEMENT)) return this._evalIndexAssignStmt(ast, env);
+    if (isNode(ast, NodeKind.IDENTIFIER)) return this._evalIdentifier(ast, env);
+    if (isNode(ast, NodeKind.INFIX_EXPRESSION)) return this._evalInfix(ast, env);
+    if (isNode(ast, NodeKind.EXPRESSION_STATEMENT)) return this.eval(ast.expression, env);
+    if (isNode(ast, NodeKind.BLOCK_STATEMENT)) return this._evalBlockStmt(ast, env);
+    if (isNode(ast, NodeKind.FUNCTION_DECLARATION)) return this._evalFunctionStmt(ast, env);
+    if (isNode(ast, NodeKind.CALL_EXPRESSION)) return this._evalCallExpr(ast, env);
+    if (isNode(ast, NodeKind.RETURN_STATEMENT)) return this._evalReturnStmt(ast, env);
+
+    throw new Error(`AST have no implementation ${JSON.stringify(ast)}`);
   }
 
   private _evalArrayLiteral(node: ArrayLiteral, env: Environment): ArrayValue {
@@ -148,6 +132,31 @@ export class Interpreter {
     env.declare(identifier, value);
 
     return value;
+  }
+
+  private _evalIndexAssignStmt(stmt: IndexAssignStatement, env: Environment): RuntimeValue {
+    const array = this.eval(stmt.left.left, env);
+    const index = this.eval(stmt.left.index, env);
+    const value = this.eval(stmt.right, env);
+
+    if (array.type !== RuntimeType.ARRAY) {
+      throw new Error(`Index operator not supported for type ${array.type}`);
+    }
+
+    if (index.type !== RuntimeType.NUMBER) {
+      throw new Error(`Index must be a number, got ${index.type}`);
+    }
+
+    const elements = (array as ArrayValue).value;
+    const idx = (index as NumberValue).value;
+
+    if (!Number.isInteger(idx) || idx < 0 || idx >= elements.length) {
+      throw new Error(`Index out of bounds: ${idx}`);
+    }
+
+    elements[idx] = value;
+
+    return VoidValue;
   }
 
   private _evalAssignStmt(stmt: AssignStatement, env: Environment): RuntimeValue {
