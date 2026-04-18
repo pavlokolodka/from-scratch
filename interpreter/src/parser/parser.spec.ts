@@ -339,6 +339,22 @@ describe('Parser', () => {
       { input: '(1 * (2 + 3))', expected: '(* 1 (+ 2 3))' },
       { input: '((1 + 2) * 3)', expected: '(* (+ 1 2) 3)' },
       { input: '((1 + 2) * 3) * 4', expected: '(* (* (+ 1 2) 3) 4)' },
+
+      { input: '1 < 2', expected: '(< 1 2)' },
+      { input: '1 > 2', expected: '(> 1 2)' },
+      { input: '1 <= 2', expected: '(<= 1 2)' },
+      { input: '1 >= 2', expected: '(>= 1 2)' },
+      { input: '1 == 2', expected: '(== 1 2)' },
+      { input: '1 != 2', expected: '(!= 1 2)' },
+
+      { input: 'true == true', expected: '(== true true)' },
+      { input: 'true != false', expected: '(!= true false)' },
+
+      { input: '"str" == "str"', expected: '(== "str" "str")' },
+
+      { input: 'x < 10 == y > 5', expected: '(== (< x 10) (> y 5))' },
+      { input: 'x + y < z', expected: '(< (+ x y) z)' },
+      { input: 'x < y + z', expected: '(< x (+ y z))' },
     ])('should parse $input to $expected', ({ input, expected }) => {
       expect(stringify(parse(input))).toBe(expected);
     });

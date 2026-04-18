@@ -192,12 +192,20 @@ export class Interpreter {
       return this._evalNumber(left.value, right.value, exp.operator as NumberOperator);
     }
 
+    if (exp.operator === NumberOperator.EQ) {
+      return new BooleanValue(left.value === right.value);
+    }
+
+    if (exp.operator === NumberOperator.NEQ) {
+      return new BooleanValue(left.value !== right.value);
+    }
+
     throw new Error(
       `Unexpected infix operands left: ${JSON.stringify(left)}, right: ${JSON.stringify(right)}`,
     );
   }
 
-  private _evalNumber(left: number, right: number, operator: NumberOperator): NumberValue {
+  private _evalNumber(left: number, right: number, operator: NumberOperator): RuntimeValue {
     switch (operator) {
       case NumberOperator.MINUS:
         return new NumberValue(left - right);
@@ -207,6 +215,18 @@ export class Interpreter {
         return new NumberValue(left * right);
       case NumberOperator.DIVIDE:
         return new NumberValue(left / right);
+      case NumberOperator.LT:
+        return new BooleanValue(left < right);
+      case NumberOperator.GT:
+        return new BooleanValue(left > right);
+      case NumberOperator.LTE:
+        return new BooleanValue(left <= right);
+      case NumberOperator.GTE:
+        return new BooleanValue(left >= right);
+      case NumberOperator.EQ:
+        return new BooleanValue(left === right);
+      case NumberOperator.NEQ:
+        return new BooleanValue(left !== right);
     }
   }
 }

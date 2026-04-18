@@ -433,6 +433,12 @@ export class Parser {
       case TokenType.MINUS:
       case TokenType.MULTIPLY:
       case TokenType.DIVIDE:
+      case TokenType.LT:
+      case TokenType.GT:
+      case TokenType.LTE:
+      case TokenType.GTE:
+      case TokenType.EQ:
+      case TokenType.NEQ:
         return this._parseInfixExpression(left);
       case TokenType.LPAREN:
         return this._parseCallExpression(left);
@@ -512,9 +518,18 @@ export class Parser {
   private _parseInfixExpression(left: Expression): Expression {
     __DEV__ &&
       assert.ok(
-        [TokenType.PLUS, TokenType.MINUS, TokenType.MULTIPLY, TokenType.DIVIDE].includes(
-          this._currentToken.type as TokenType,
-        ),
+        [
+          TokenType.PLUS,
+          TokenType.MINUS,
+          TokenType.MULTIPLY,
+          TokenType.DIVIDE,
+          TokenType.LT,
+          TokenType.GT,
+          TokenType.LTE,
+          TokenType.GTE,
+          TokenType.EQ,
+          TokenType.NEQ,
+        ].includes(this._currentToken.type as TokenType),
         `_parseInfixExpression called with non-operator token: ${toDebugToken(this._currentToken)}`,
       );
 
@@ -532,13 +547,21 @@ export class Parser {
     switch (token.type) {
       case TokenType.LBRACKET:
       case TokenType.LPAREN:
-        return 3;
-      case TokenType.MINUS:
-      case TokenType.PLUS:
-        return 1;
+        return 5;
       case TokenType.MULTIPLY:
       case TokenType.DIVIDE:
+        return 4;
+      case TokenType.MINUS:
+      case TokenType.PLUS:
+        return 3;
+      case TokenType.LT:
+      case TokenType.GT:
+      case TokenType.LTE:
+      case TokenType.GTE:
         return 2;
+      case TokenType.EQ:
+      case TokenType.NEQ:
+        return 1;
       default:
         return this._lowPrecedence;
     }

@@ -60,7 +60,22 @@ export class Lexer {
 
     switch (this._char) {
       case '=':
-        token = this._buildToken(TokenType.ASSIGN, this._char);
+        if (this._peekChar() === '=') {
+          const char = this._char;
+          this._readChar();
+          token = this._buildToken(TokenType.EQ, char + this._char);
+        } else {
+          token = this._buildToken(TokenType.ASSIGN, this._char);
+        }
+        break;
+      case '!':
+        if (this._peekChar() === '=') {
+          const char = this._char;
+          this._readChar();
+          token = this._buildToken(TokenType.NEQ, char + this._char);
+        } else {
+          token = this._buildToken(TokenType.ILLEGAL, this._char);
+        }
         break;
       case '+':
         token = this._buildToken(TokenType.PLUS, this._char);
@@ -102,10 +117,22 @@ export class Lexer {
         token = this._buildToken(TokenType.SEMICOLON, this._char);
         break;
       case '<':
-        token = this._buildToken(TokenType.LT, this._char);
+        if (this._peekChar() === '=') {
+          const char = this._char;
+          this._readChar();
+          token = this._buildToken(TokenType.LTE, char + this._char);
+        } else {
+          token = this._buildToken(TokenType.LT, this._char);
+        }
         break;
       case '>':
-        token = this._buildToken(TokenType.GT, this._char);
+        if (this._peekChar() === '=') {
+          const char = this._char;
+          this._readChar();
+          token = this._buildToken(TokenType.GTE, char + this._char);
+        } else {
+          token = this._buildToken(TokenType.GT, this._char);
+        }
         break;
       case '"':
         token = this._buildToken(TokenType.STRING, this._readString());
@@ -129,6 +156,14 @@ export class Lexer {
     }
     this._position = this._readPosition;
     this._readPosition += 1;
+  }
+
+  private _peekChar(): string {
+    if (this._readPosition >= this._input.length) {
+      return '';
+    } else {
+      return this._input[this._readPosition];
+    }
   }
 
   private _readNumber(): string {

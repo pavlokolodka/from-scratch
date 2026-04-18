@@ -7,6 +7,12 @@ export enum NumberOperator {
   MINUS = '-',
   MULTIPLY = '*',
   DIVIDE = '/',
+  LT = '<',
+  GT = '>',
+  LTE = '<=',
+  GTE = '>=',
+  EQ = '==',
+  NEQ = '!=',
 }
 
 export class NumberLiteral implements Expression {

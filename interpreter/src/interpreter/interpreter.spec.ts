@@ -66,6 +66,36 @@ describe('Interpreter', () => {
       });
 
       it.each([
+        { input: '1 < 2', expected: true },
+        { input: '2 < 1', expected: false },
+        { input: '1 < 1', expected: false },
+        { input: '2 > 1', expected: true },
+        { input: '1 > 2', expected: false },
+        { input: '1 > 1', expected: false },
+        { input: '1 <= 2', expected: true },
+        { input: '2 <= 1', expected: false },
+        { input: '1 <= 1', expected: true },
+        { input: '2 >= 1', expected: true },
+        { input: '1 >= 2', expected: false },
+        { input: '1 >= 1', expected: true },
+        { input: '1 == 1', expected: true },
+        { input: '1 == 2', expected: false },
+        { input: '1 != 1', expected: false },
+        { input: '1 != 2', expected: true },
+        { input: 'true == true', expected: true },
+        { input: 'true == false', expected: false },
+        { input: 'false != true', expected: true },
+        { input: '"a" == "a"', expected: true },
+        { input: '"a" == "b"', expected: false },
+        { input: 'nil == nil', expected: true },
+        { input: 'nil != nil', expected: false },
+        { input: '1 == "1"', expected: false },
+      ])('should evaluate comparison $input to $expected', ({ input, expected }) => {
+        const result = evaluate(input);
+        expect(result).toEqual({ type: RuntimeType.BOOLEAN, value: expected });
+      });
+
+      it.each([
         { input: '(5' },
         { input: '(5 + 5' },
         { input: '((5 + 5)' },

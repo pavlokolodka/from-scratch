@@ -26,6 +26,10 @@ export enum TokenType {
   DIVIDE = '/',
   LT = '<',
   GT = '>',
+  EQ = '==',
+  NEQ = '!=',
+  LTE = '<=',
+  GTE = '>=',
 
   // Punctuation
   COMMA = ',',
