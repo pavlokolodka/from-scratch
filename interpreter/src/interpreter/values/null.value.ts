@@ -1,4 +1,9 @@
 import type { RuntimeValue } from '../interpreter.interface';
 import { RuntimeType } from '../interpreter.interface';
 
-export const NullValue = { type: RuntimeType.NULL, value: null } as RuntimeValue;
+export class NullValueClass implements RuntimeValue {
+  readonly type = RuntimeType.NULL;
+  readonly value = null;
+}
+
+export const NullValue = new NullValueClass();

@@ -13,6 +13,7 @@ import type { BlockStatement } from './statements/block.statement';
 import type { ConstStatement } from './statements/const.statement';
 import type { ExpressionStatement } from './statements/expression.statement';
 import type { FunctionDeclaration } from './statements/function-declaration.statement';
+import type { IfStatement } from './statements/if.statement';
 import type { IndexAssignStatement } from './statements/index-assign.statement';
 import type { LetStatement } from './statements/let.statement';
 import type { ReturnStatement } from './statements/return.statement';
@@ -29,6 +30,7 @@ export enum NodeKind {
   EXPRESSION_STATEMENT = 'EXPRESSION_STATEMENT',
   BLOCK_STATEMENT = 'BLOCK_STATEMENT',
   FUNCTION_DECLARATION = 'FUNCTION_DECLARATION',
+  IF_STATEMENT = 'IF_STATEMENT',
 
   // Expressions
   IDENTIFIER = 'IDENTIFIER',
@@ -75,4 +77,5 @@ export type NodeKindMap = {
   [NodeKind.BLOCK_STATEMENT]: BlockStatement;
   [NodeKind.FUNCTION_DECLARATION]: FunctionDeclaration;
   [NodeKind.RETURN_STATEMENT]: ReturnStatement;
+  [NodeKind.IF_STATEMENT]: IfStatement;
 };

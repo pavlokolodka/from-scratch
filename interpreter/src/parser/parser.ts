@@ -11,6 +11,7 @@ import {
   ExpressionStatement,
   FunctionDeclaration,
   Identifier,
+  IfStatement,
   IndexAssignStatement,
   IndexExpression,
   InfixExpression,
@@ -81,6 +82,8 @@ export class Parser {
         return this._parseBlockStatement();
       case TokenType.FUNCTION:
         return this._parseFunctionStatement();
+      case TokenType.IF:
+        return this._parseIfStatement();
       case TokenType.RETURN:
         return this._parseReturnStatement();
       case TokenType.IDENT:
@@ -231,6 +234,48 @@ export class Parser {
     this._nextToken();
 
     return new BlockStatement(token, statements);
+  }
+
+  private _parseIfStatement(): IfStatement {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.IF) || this._currTokenIs(TokenType.ELIF),
+        `_parseIfStatement called with non-IF/ELIF token: ${toDebugToken(this._currentToken)}`,
+      );
+
+    const token = this._currentToken;
+
+    if (!this._expectPeek(TokenType.LPAREN)) {
+      throw new Error(`Expected '(', got ${toDebugToken(this._peekToken)}`);
+    }
+
+    this._nextToken();
+    const condition = this._parseExpression(this._lowPrecedence);
+
+    if (!this._expectPeek(TokenType.RPAREN)) {
+      throw new Error(`Expected ')', got ${toDebugToken(this._peekToken)}`);
+    }
+
+    if (!this._expectPeek(TokenType.LBRACE)) {
+      throw new Error(`Expected '{', got ${toDebugToken(this._peekToken)}`);
+    }
+
+    const consequence = this._parseBlockStatement();
+
+    let alternative: IfStatement | BlockStatement | null = null;
+
+    if (this._peekTokenIs(TokenType.ELIF)) {
+      this._nextToken();
+      alternative = this._parseIfStatement();
+    } else if (this._peekTokenIs(TokenType.ELSE)) {
+      this._nextToken();
+      if (!this._expectPeek(TokenType.LBRACE)) {
+        throw new Error(`Expected '{', got ${toDebugToken(this._peekToken)}`);
+      }
+      alternative = this._parseBlockStatement();
+    }
+
+    return new IfStatement(token, condition, consequence, alternative);
   }
 
   private _parseLetStatement(): LetStatement {

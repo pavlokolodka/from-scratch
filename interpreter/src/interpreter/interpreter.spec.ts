@@ -767,6 +767,72 @@ describe('Interpreter', () => {
     });
   });
 
+  describe('truthiness', () => {
+    it.each([
+      { input: 'true', expected: 1 },
+      { input: 'false', expected: 0 },
+      { input: 'nil', expected: 0 },
+      { input: '1', expected: 1 },
+      { input: '0', expected: 0 },
+      { input: '"hello"', expected: 1 },
+      { input: '""', expected: 0 },
+      { input: '[1]', expected: 1 },
+      { input: '[]', expected: 0 },
+    ])('should evaluate truthiness of $input to $expected', ({ input, expected }) => {
+      const result = evaluateAll(`let res = 0; if (${input}) { res = 1 } else { res = 0 }; res`);
+      expect(result).toEqual({ type: RuntimeType.NUMBER, value: expected });
+    });
+  });
+
+  describe('if statements', () => {
+    it.each([
+      {
+        input: 'let x = 0; if (true) { x = 10 }; x',
+        expected: { type: RuntimeType.NUMBER, value: 10 },
+      },
+      {
+        input: 'let x = 0; if (false) { x = 10 }; x',
+        expected: { type: RuntimeType.NUMBER, value: 0 },
+      },
+      {
+        input: 'let x = 0; if (1 < 2) { x = 10 } else { x = 20 }; x',
+        expected: { type: RuntimeType.NUMBER, value: 10 },
+      },
+      {
+        input: 'let x = 0; if (1 > 2) { x = 10 } else { x = 20 }; x',
+        expected: { type: RuntimeType.NUMBER, value: 20 },
+      },
+      {
+        input: 'let x = 0; if (1 > 2) { x = 10 } elif (1 < 2) { x = 5 } else { x = 0 }; x',
+        expected: { type: RuntimeType.NUMBER, value: 5 },
+      },
+      {
+        input: 'let x = 0; if (1 > 2) { x = 10 } elif (1 > 3) { x = 5 } else { x = 0 }; x',
+        expected: { type: RuntimeType.NUMBER, value: 0 },
+      },
+    ])('should evaluate if/elif/else side effects: $input', ({ input, expected }) => {
+      expect(evaluateAll(input)).toEqual(expected);
+    });
+
+    it.each([
+      {
+        input: 'fn f(x) { if (x > 10) { return "high" } else { return "low" } }; f(15)',
+        expected: { type: RuntimeType.STRING, value: 'high' },
+      },
+      {
+        input: 'fn f(x) { if (x > 10) { return "high" } else { return "low" } }; f(5)',
+        expected: { type: RuntimeType.STRING, value: 'low' },
+      },
+      {
+        input:
+          'fn f(x) { if (x > 10) { return "high" } elif (x > 5) { return "medium" } else { return "low" } }; f(7)',
+        expected: { type: RuntimeType.STRING, value: 'medium' },
+      },
+    ])('should support return from inside if/elif/else block: $input', ({ input, expected }) => {
+      expect(evaluateAll(input)).toEqual(expected);
+    });
+  });
+
   describe('should throw an error', () => {
     it('should throw error for unknown node kind', () => {
       const unknownNode = { kind: 'UNKNOWN' } as any;

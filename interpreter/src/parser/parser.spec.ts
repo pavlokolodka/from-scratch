@@ -8,6 +8,7 @@ import type {
   ExpressionStatement,
   FunctionDeclaration,
   Identifier,
+  IfStatement,
   IndexAssignStatement,
   IndexExpression,
   InfixExpression,
@@ -66,6 +67,15 @@ function stringify(node: Node): string {
     case NodeKind.BLOCK_STATEMENT: {
       const block = node as BlockStatement;
       return `(block ${block.statements.map(stringify).join(' ')})`;
+    }
+    case NodeKind.IF_STATEMENT: {
+      const ifStmt = node as IfStatement;
+      let s = `(if ${stringify(ifStmt.condition)} ${stringify(ifStmt.consequence)}`;
+      if (ifStmt.alternative) {
+        s += ` ${stringify(ifStmt.alternative)}`;
+      }
+      s += ')';
+      return s;
     }
     case NodeKind.FUNCTION_DECLARATION: {
       const fn = node as FunctionDeclaration;
@@ -531,6 +541,43 @@ describe('Parser', () => {
 
     it('should throw for return with no expression', () => {
       expect(() => parse('return')).toThrow();
+    });
+  });
+
+  describe('if statements', () => {
+    it.each([
+      { input: 'if (true) { 10 }', expected: '(if true (block 10))' },
+      { input: 'if (x > 10) { x }', expected: '(if (> x 10) (block x))' },
+      {
+        input: 'if (x > 10) { 10 } else { 20 }',
+        expected: '(if (> x 10) (block 10) (block 20))',
+      },
+      {
+        input: 'if (x > 10) { 10 } elif (x > 5) { 5 } else { 0 }',
+        expected: '(if (> x 10) (block 10) (if (> x 5) (block 5) (block 0)))',
+      },
+      {
+        input: 'if (x > 10) { 10 } elif (x > 5) { 5 } elif (x > 2) { 2 } else { 0 }',
+        expected:
+          '(if (> x 10) (block 10) (if (> x 5) (block 5) (if (> x 2) (block 2) (block 0))))',
+      },
+    ])('should parse $input to $expected', ({ input, expected }) => {
+      expect(stringify(parse(input))).toBe(expected);
+    });
+
+    it.each([
+      { input: 'if true { 10 }', desc: 'missing condition parens' },
+      { input: 'if (true { 10 }', desc: 'missing condition parens' },
+      { input: 'if )true { 10 }', desc: 'missing condition parens' },
+      { input: 'if true) { 10 }', desc: 'missing condition parens' },
+      { input: 'if (true) 10', desc: 'missing block braces' },
+      { input: 'if (true) { 10', desc: 'missing block braces' },
+      { input: 'if (true) } 10', desc: 'missing block braces' },
+      { input: 'if (true) 10 }', desc: 'missing block braces' },
+      { input: 'if (true) { 10 } else 20', desc: 'missing else block braces' },
+      { input: 'if (true) { 10 } elif (false) 20', desc: 'missing elif block braces' },
+    ])('should throw for $desc: $input', ({ input }) => {
+      expect(() => parse(input)).toThrow();
     });
   });
 });

@@ -6,6 +6,7 @@ import type {
   ConstStatement,
   FunctionDeclaration,
   Identifier,
+  IfStatement,
   IndexAssignStatement,
   IndexExpression,
   InfixExpression,
@@ -17,6 +18,7 @@ import type { RuntimeValue } from './interpreter.interface';
 import { isNode, NodeKind, NumberOperator } from '../parser/ast';
 import { Environment } from './environment';
 import { RuntimeType } from './interpreter.interface';
+import { isType } from './is-type';
 import { ArrayValue } from './values/array.value';
 import { BooleanValue } from './values/boolean.value';
 import { FunctionValue } from './values/function.value';
@@ -46,6 +48,7 @@ export class Interpreter {
     if (isNode(ast, NodeKind.EXPRESSION_STATEMENT)) return this.eval(ast.expression, env);
     if (isNode(ast, NodeKind.BLOCK_STATEMENT)) return this._evalBlockStmt(ast, env);
     if (isNode(ast, NodeKind.FUNCTION_DECLARATION)) return this._evalFunctionStmt(ast, env);
+    if (isNode(ast, NodeKind.IF_STATEMENT)) return this._evalIfStatement(ast, env);
     if (isNode(ast, NodeKind.CALL_EXPRESSION)) return this._evalCallExpr(ast, env);
     if (isNode(ast, NodeKind.RETURN_STATEMENT)) return this._evalReturnStmt(ast, env);
 
@@ -115,6 +118,18 @@ export class Interpreter {
     const value = new FunctionValue(stmt.parameters, stmt.body, env);
 
     env.declare(ident, value);
+
+    return VoidValue;
+  }
+
+  private _evalIfStatement(node: IfStatement, env: Environment): RuntimeValue {
+    const condition = this.eval(node.condition, env);
+
+    if (this._isTruthy(condition)) {
+      return this.eval(node.consequence, env);
+    } else if (node.alternative) {
+      return this.eval(node.alternative, env);
+    }
 
     return VoidValue;
   }
@@ -228,5 +243,14 @@ export class Interpreter {
       case NumberOperator.NEQ:
         return new BooleanValue(left !== right);
     }
+  }
+
+  private _isTruthy(val: RuntimeValue): boolean {
+    if (isType(val, RuntimeType.NULL)) return false;
+    if (isType(val, RuntimeType.BOOLEAN)) return val.value;
+    if (isType(val, RuntimeType.STRING)) return val.value.length > 0;
+    if (isType(val, RuntimeType.NUMBER)) return val.value !== 0;
+    if (isType(val, RuntimeType.ARRAY)) return val.value.length > 0;
+    return true;
   }
 }
