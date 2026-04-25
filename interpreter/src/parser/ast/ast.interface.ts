@@ -6,6 +6,7 @@ import type { IndexExpression } from './expressions/index-expression.expression'
 import type { InfixExpression } from './expressions/infix.expression';
 import type { NullLiteral } from './expressions/null-literal.expression';
 import type { NumberLiteral } from './expressions/number-literal.expression';
+import type { PrefixExpression } from './expressions/prefix.expression';
 import type { StringLiteral } from './expressions/string-literal.expression';
 import type { Program } from './program.node';
 import type { AssignStatement } from './statements/assign.statement';
@@ -66,6 +67,7 @@ export type NodeKindMap = {
   [NodeKind.BOOLEAN_LITERAL]: BooleanLiteral;
   [NodeKind.NULL_LITERAL]: NullLiteral;
   [NodeKind.ARRAY_LITERAL]: ArrayLiteral;
+  [NodeKind.PREFIX_EXPRESSION]: PrefixExpression;
   [NodeKind.INFIX_EXPRESSION]: InfixExpression;
   [NodeKind.INDEX_EXPRESSION]: IndexExpression;
   [NodeKind.CALL_EXPRESSION]: CallExpression;

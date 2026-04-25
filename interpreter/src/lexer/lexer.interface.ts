@@ -13,7 +13,7 @@ export enum TokenType {
   ELSE = 'else',
   WHILE = 'while',
   FUNCTION = 'fn',
-  NIL = 'nil',
+  NULL = 'nil',
   TRUE = 'true',
   FALSE = 'false',
   RETURN = 'return',
@@ -30,6 +30,8 @@ export enum TokenType {
   NEQ = '!=',
   LTE = '<=',
   GTE = '>=',
+  BANG = '!',
+  DOUBLE_BANG = '!!',
 
   // Punctuation
   COMMA = ',',

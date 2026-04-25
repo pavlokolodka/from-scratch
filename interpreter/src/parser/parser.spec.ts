@@ -16,6 +16,7 @@ import type {
   Node,
   NullLiteral,
   NumberLiteral,
+  PrefixExpression,
   Program,
   ReturnStatement,
   StringLiteral,
@@ -37,6 +38,10 @@ function stringify(node: Node): string {
     case NodeKind.INFIX_EXPRESSION: {
       const infix = node as InfixExpression;
       return `(${infix.operator} ${stringify(infix.left)} ${stringify(infix.right)})`;
+    }
+    case NodeKind.PREFIX_EXPRESSION: {
+      const prefix = node as PrefixExpression;
+      return `(${prefix.operator}${stringify(prefix.right)})`;
     }
     case NodeKind.NUMBER_LITERAL: {
       const num = node as NumberLiteral;
@@ -304,6 +309,22 @@ describe('Parser', () => {
       { input: 'x = "hello";', expected: '(= x "hello")' },
       { input: 'x = "1";', expected: '(= x "1")' },
       { input: 'y = "";', expected: '(= y "")' },
+      { input: 'x = -5;', expected: '(= x (-5))' },
+      { input: 'x = -(5);', expected: '(= x (-5))' },
+      { input: 'x = -(-5);', expected: '(= x (-(-5)))' },
+      { input: 'x = !5;', expected: '(= x (!5))' },
+      { input: 'x = !!5;', expected: '(= x (!!5))' },
+      { input: 'y = !true;', expected: '(= y (!true))' },
+      { input: 'y = !!true;', expected: '(= y (!!true))' },
+      { input: 'z = -a;', expected: '(= z (-a))' },
+      { input: 'z = !a;', expected: '(= z (!a))' },
+      { input: 'z = !!a;', expected: '(= z (!!a))' },
+      { input: 'z = !nil;', expected: '(= z (!nil))' },
+      { input: 'z = !!nil;', expected: '(= z (!!nil))' },
+      { input: 'z = ![];', expected: '(= z (!(array )))' },
+      { input: 'z = !![];', expected: '(= z (!!(array )))' },
+      { input: 'z = !arr[i];', expected: '(= z (!(index arr i)))' },
+      { input: 'z = !!arr[i];', expected: '(= z (!!(index arr i)))' },
     ])('should parse $input to $expected', ({ input, expected }) => {
       expect(stringify(parse(input))).toBe(expected);
     });
@@ -541,6 +562,26 @@ describe('Parser', () => {
 
     it('should throw for return with no expression', () => {
       expect(() => parse('return')).toThrow();
+    });
+  });
+
+  describe('prefix expressions', () => {
+    it.each([
+      { input: '-5', expected: '(-5)' },
+      { input: '!true', expected: '(!true)' },
+      { input: '-a', expected: '(-a)' },
+      { input: '!!a', expected: '(!!a)' },
+      { input: '!false', expected: '(!false)' },
+      { input: '!!true', expected: '(!!true)' },
+      { input: '!nil', expected: '(!nil)' },
+      { input: '!!"string"', expected: '(!!"string")' },
+      { input: '![]', expected: '(!(array ))' },
+      { input: '!![1, 2]', expected: '(!!(array 1 2))' },
+      { input: '-arr[0]', expected: '(-(index arr 0))' },
+      { input: '!arr[i]', expected: '(!(index arr i))' },
+      { input: '!!arr[1 + 2]', expected: '(!!(index arr (+ 1 2)))' },
+    ])('should parse $input to $expected', ({ input, expected }) => {
+      expect(stringify(parse(input))).toBe(expected);
     });
   });
 

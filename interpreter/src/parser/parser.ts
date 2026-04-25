@@ -20,6 +20,7 @@ import {
   NodeKind,
   NullLiteral,
   NumberLiteral,
+  PrefixExpression,
   Program,
   ReturnStatement,
   StringLiteral,
@@ -438,18 +439,40 @@ export class Parser {
         return new NumberLiteral(this._currentToken);
       case TokenType.STRING:
         return new StringLiteral(this._currentToken);
+      case TokenType.TRUE:
+      case TokenType.FALSE:
+        return new BooleanLiteral(this._currentToken);
+      case TokenType.NULL:
+        return new NullLiteral(this._currentToken);
       case TokenType.LPAREN:
         return this._parseLParen();
       case TokenType.LBRACKET:
         return this._parseArray();
-      case TokenType.TRUE:
-      case TokenType.FALSE:
-        return new BooleanLiteral(this._currentToken);
-      case TokenType.NIL:
-        return new NullLiteral(this._currentToken);
+      case TokenType.MINUS:
+      case TokenType.BANG:
+      case TokenType.DOUBLE_BANG:
+        return this._parsePrefixExpression();
       default:
         return null;
     }
+  }
+
+  private _parsePrefixExpression(): PrefixExpression {
+    __DEV__ &&
+      assert.ok(
+        [TokenType.MINUS, TokenType.BANG, TokenType.DOUBLE_BANG].includes(
+          this._currentToken.type as TokenType,
+        ),
+        `_parsePrefixExpression called with non-operator token: ${toDebugToken(this._currentToken)}`,
+      );
+
+    const token = this._currentToken;
+
+    this._nextToken();
+
+    const right = this._parseExpression(this._lowPrecedence);
+
+    return new PrefixExpression(token, right);
   }
 
   private _parseLParen(): Expression {
@@ -627,7 +650,7 @@ export class Parser {
       this._expectPeek(TokenType.NUMBER) ||
       this._expectPeek(TokenType.TRUE) ||
       this._expectPeek(TokenType.FALSE) ||
-      this._expectPeek(TokenType.NIL) ||
+      this._expectPeek(TokenType.NULL) ||
       this._expectPeek(TokenType.LBRACKET)
     );
   }

@@ -12,10 +12,11 @@ import type {
   InfixExpression,
   LetStatement,
   Node,
+  PrefixExpression,
   ReturnStatement,
 } from '../parser/ast';
 import type { RuntimeValue } from './interpreter.interface';
-import { isNode, NodeKind, NumberOperator } from '../parser/ast';
+import { isNode, NodeKind, NumberOperator, PrefixOperator } from '../parser/ast';
 import { Environment } from './environment';
 import { RuntimeType } from './interpreter.interface';
 import { isType } from './is-type';
@@ -44,6 +45,7 @@ export class Interpreter {
     if (isNode(ast, NodeKind.ASSIGN_STATEMENT)) return this._evalAssignStmt(ast, env);
     if (isNode(ast, NodeKind.INDEX_ASSIGN_STATEMENT)) return this._evalIndexAssignStmt(ast, env);
     if (isNode(ast, NodeKind.IDENTIFIER)) return this._evalIdentifier(ast, env);
+    if (isNode(ast, NodeKind.PREFIX_EXPRESSION)) return this._evalPrefixExpression(ast, env);
     if (isNode(ast, NodeKind.INFIX_EXPRESSION)) return this._evalInfix(ast, env);
     if (isNode(ast, NodeKind.EXPRESSION_STATEMENT)) return this.eval(ast.expression, env);
     if (isNode(ast, NodeKind.BLOCK_STATEMENT)) return this._evalBlockStmt(ast, env);
@@ -53,6 +55,24 @@ export class Interpreter {
     if (isNode(ast, NodeKind.RETURN_STATEMENT)) return this._evalReturnStmt(ast, env);
 
     throw new Error(`AST have no implementation ${JSON.stringify(ast)}`);
+  }
+
+  private _evalPrefixExpression(node: PrefixExpression, env: Environment): RuntimeValue {
+    const right = this.eval(node.right, env);
+
+    switch (node.operator) {
+      case PrefixOperator.BANG:
+        return new BooleanValue(!this._isTruthy(right));
+      case PrefixOperator.DOUBLE_BANG:
+        return new BooleanValue(this._isTruthy(right));
+      case PrefixOperator.MINUS:
+        if (!isType(right, RuntimeType.NUMBER)) {
+          throw new Error(`Operator '-' not supported for type ${right.type}`);
+        }
+        return new NumberValue(-right.value);
+      default:
+        throw new Error(`Unknown operator: ${node.operator}`);
+    }
   }
 
   private _evalArrayLiteral(node: ArrayLiteral, env: Environment): ArrayValue {
@@ -91,7 +111,7 @@ export class Interpreter {
   private _evalCallExpr(expr: CallExpression, env: Environment): RuntimeValue {
     const func = this._evalIdentifier(expr.identifier, env);
 
-    if (!(func instanceof FunctionValue)) {
+    if (!isType(func, RuntimeType.FUNCTION)) {
       throw new Error(`${expr.identifier.value} is not a function`);
     }
 
@@ -110,7 +130,7 @@ export class Interpreter {
     const result = this._evalBlockStmt(func.body, funcEnv);
     this._callDepth--;
 
-    return result instanceof ReturnValue ? result.value : result;
+    return isType(result, RuntimeType.RETURN) ? result.value : result;
   }
 
   private _evalFunctionStmt(stmt: FunctionDeclaration, env: Environment): RuntimeValue {
@@ -139,7 +159,7 @@ export class Interpreter {
 
     for (const lstmt of stmt.statements) {
       const result = this.eval(lstmt, localEnv);
-      if (result instanceof ReturnValue) return result;
+      if (isType(result, RuntimeType.RETURN)) return result;
     }
 
     return VoidValue;

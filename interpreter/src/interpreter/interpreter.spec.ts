@@ -104,6 +104,20 @@ describe('Interpreter', () => {
       ])('should throw error for missing closing parenthesis in $input', ({ input }) => {
         expect(() => evaluate(input)).toThrow('Closing parentheses not found');
       });
+
+      describe('-', () => {
+        it.each([
+          { input: '-5', expected: -5 },
+          { input: '-10', expected: -10 },
+          { input: '--5', expected: 5 },
+        ])('should evaluate $input to $expected', ({ input, expected }) => {
+          expect(evaluate(input)).toEqual({ type: RuntimeType.NUMBER, value: expected });
+        });
+
+        it('should throw for non-number type', () => {
+          expect(() => evaluate('-"a"')).toThrow("Operator '-' not supported for type STRING");
+        });
+      });
     });
   });
 
@@ -131,6 +145,31 @@ describe('Interpreter', () => {
     it('should reassign a string variable', () => {
       const result = evaluateAll('let s = "hello"; s = "world"; s') as StringValue;
       expect(result).toEqual({ type: RuntimeType.STRING, value: 'world' });
+    });
+
+    describe('assignments with prefix expressions', () => {
+      it.each([
+        { input: 'let x = 5; x = -x; x', expected: -5, type: RuntimeType.NUMBER },
+        { input: 'let x = 5; x = -(-x); x', expected: 5, type: RuntimeType.NUMBER },
+        { input: 'let x = true; x = !x; x', expected: false, type: RuntimeType.BOOLEAN },
+        { input: 'let x = false; x = !!x; x', expected: false, type: RuntimeType.BOOLEAN },
+        { input: 'let x = 10; x = !x; x', expected: false, type: RuntimeType.BOOLEAN },
+        { input: 'let x = 0; x = !x; x', expected: true, type: RuntimeType.BOOLEAN },
+        { input: 'let x = "hello"; x = !x; x', expected: false, type: RuntimeType.BOOLEAN },
+        { input: 'let x = ""; x = !x; x', expected: true, type: RuntimeType.BOOLEAN },
+        { input: 'let x = nil; x = !x; x', expected: true, type: RuntimeType.BOOLEAN },
+        { input: 'let x = [1]; x = !x; x', expected: false, type: RuntimeType.BOOLEAN },
+        { input: 'let x = []; x = !x; x', expected: true, type: RuntimeType.BOOLEAN },
+        { input: 'let x = [5]; let y = -x[0]; y', expected: -5, type: RuntimeType.NUMBER },
+        { input: 'let x = [true]; let y = !x[0]; y', expected: false, type: RuntimeType.BOOLEAN },
+        { input: 'let x = [false]; let y = !!x[0]; y', expected: false, type: RuntimeType.BOOLEAN },
+      ])('should evaluate assignment with prefix $input to $expected', ({
+        input,
+        expected,
+        type,
+      }) => {
+        expect(evaluateAll(input)).toEqual({ type, value: expected });
+      });
     });
 
     it('should pass a string as a function argument', () => {
@@ -781,6 +820,40 @@ describe('Interpreter', () => {
     ])('should evaluate truthiness of $input to $expected', ({ input, expected }) => {
       const result = evaluateAll(`let res = 0; if (${input}) { res = 1 } else { res = 0 }; res`);
       expect(result).toEqual({ type: RuntimeType.NUMBER, value: expected });
+    });
+
+    describe('prefix expressions', () => {
+      describe('!', () => {
+        it.each([
+          { input: '!true', expected: false },
+          { input: '!false', expected: true },
+          { input: '!nil', expected: true },
+          { input: '!1', expected: false },
+          { input: '!0', expected: true },
+          { input: '!"hello"', expected: false },
+          { input: '!""', expected: true },
+          { input: '![1]', expected: false },
+          { input: '![]', expected: true },
+        ])('should evaluate $input to $expected', ({ input, expected }) => {
+          expect(evaluate(input)).toEqual({ type: RuntimeType.BOOLEAN, value: expected });
+        });
+      });
+
+      describe('!!', () => {
+        it.each([
+          { input: '!!true', expected: true },
+          { input: '!!false', expected: false },
+          { input: '!!nil', expected: false },
+          { input: '!!1', expected: true },
+          { input: '!!0', expected: false },
+          { input: '!!"hello"', expected: true },
+          { input: '!!""', expected: false },
+          { input: '!![1]', expected: true },
+          { input: '!![]', expected: false },
+        ])('should evaluate $input to $expected', ({ input, expected }) => {
+          expect(evaluate(input)).toEqual({ type: RuntimeType.BOOLEAN, value: expected });
+        });
+      });
     });
   });
 

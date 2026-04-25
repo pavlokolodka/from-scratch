@@ -26,7 +26,7 @@ describe('Lexer', () => {
       { type: TokenType.ELSE, literal: 'else', line: 1 },
       { type: TokenType.WHILE, literal: 'while', line: 1 },
       { type: TokenType.FUNCTION, literal: 'fn', line: 1 },
-      { type: TokenType.NIL, literal: 'nil', line: 1 },
+      { type: TokenType.NULL, literal: 'nil', line: 1 },
       { type: TokenType.IDENT, literal: 'five', line: 1 },
       { type: TokenType.NUMBER, literal: '5', line: 1 },
       { type: TokenType.STRING, literal: 'foobar', line: 1 },

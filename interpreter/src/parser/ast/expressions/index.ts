@@ -6,4 +6,5 @@ export * from './index-expression.expression';
 export * from './infix.expression';
 export * from './null-literal.expression';
 export * from './number-literal.expression';
+export * from './prefix.expression';
 export * from './string-literal.expression';

@@ -20,7 +20,7 @@ export class Lexer {
     else: TokenType.ELSE,
     while: TokenType.WHILE,
     fn: TokenType.FUNCTION,
-    nil: TokenType.NIL,
+    nil: TokenType.NULL,
     true: TokenType.TRUE,
     false: TokenType.FALSE,
     return: TokenType.RETURN,
@@ -61,21 +61,27 @@ export class Lexer {
     switch (this._char) {
       case '=':
         if (this._peekChar() === '=') {
-          const char = this._char;
           this._readChar();
-          token = this._buildToken(TokenType.EQ, char + this._char);
-        } else {
-          token = this._buildToken(TokenType.ASSIGN, this._char);
+          token = this._buildToken(TokenType.EQ, '==');
+          break;
         }
+
+        token = this._buildToken(TokenType.ASSIGN, this._char);
         break;
       case '!':
         if (this._peekChar() === '=') {
-          const char = this._char;
           this._readChar();
-          token = this._buildToken(TokenType.NEQ, char + this._char);
-        } else {
-          token = this._buildToken(TokenType.ILLEGAL, this._char);
+          token = this._buildToken(TokenType.NEQ, '!=');
+          break;
         }
+
+        if (this._peekChar() === '!') {
+          this._readChar();
+          token = this._buildToken(TokenType.DOUBLE_BANG, '!!');
+          break;
+        }
+
+        token = this._buildToken(TokenType.BANG, this._char);
         break;
       case '+':
         token = this._buildToken(TokenType.PLUS, this._char);
