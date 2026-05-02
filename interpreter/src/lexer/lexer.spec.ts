@@ -3,7 +3,7 @@ import { TokenType } from './lexer.interface';
 
 describe('Lexer', () => {
   describe('essential tokens', () => {
-    const input = `= + ( ) { } [ ] , : ; < > let const if elif else while fn nil five 5 "foobar"`;
+    const input = `= + ( ) { } [ ] , : ; < > let const if elif else while stop return fn nil five 5 "foobar"`;
     const tokens = new Lexer(input).tokenize();
     const expected = [
       { type: TokenType.ASSIGN, literal: '=', line: 1 },
@@ -25,6 +25,8 @@ describe('Lexer', () => {
       { type: TokenType.ELIF, literal: 'elif', line: 1 },
       { type: TokenType.ELSE, literal: 'else', line: 1 },
       { type: TokenType.WHILE, literal: 'while', line: 1 },
+      { type: TokenType.BREAK, literal: 'stop', line: 1 },
+      { type: TokenType.RETURN, literal: 'return', line: 1 },
       { type: TokenType.FUNCTION, literal: 'fn', line: 1 },
       { type: TokenType.NULL, literal: 'nil', line: 1 },
       { type: TokenType.IDENT, literal: 'five', line: 1 },
@@ -492,6 +494,31 @@ describe('Lexer', () => {
         { type: TokenType.IDENT, literal: 'x', line: 1 },
         { type: TokenType.MULTIPLY, literal: '*', line: 1 },
         { type: TokenType.NUMBER, literal: '2', line: 1 },
+        { type: TokenType.RBRACE, literal: '}', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].line).toBe(tests[i].line);
+      }
+    });
+  });
+
+  describe('stop keyword', () => {
+    it('should tokenize stop inside a while loop', () => {
+      const input = `while (true) { stop }`;
+      const tests = [
+        { type: TokenType.WHILE, literal: 'while', line: 1 },
+        { type: TokenType.LPAREN, literal: '(', line: 1 },
+        { type: TokenType.TRUE, literal: 'true', line: 1 },
+        { type: TokenType.RPAREN, literal: ')', line: 1 },
+        { type: TokenType.LBRACE, literal: '{', line: 1 },
+        { type: TokenType.BREAK, literal: 'stop', line: 1 },
         { type: TokenType.RBRACE, literal: '}', line: 1 },
         { type: TokenType.EOF, literal: '', line: 1 },
       ];

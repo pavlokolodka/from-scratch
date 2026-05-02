@@ -906,6 +906,139 @@ describe('Interpreter', () => {
     });
   });
 
+  describe('while statements', () => {
+    it('should evaluate a while loop and mutate variables', () => {
+      const input = `
+        let i = 0;
+        while (i < 3) {
+          i = i + 1;
+        };
+        i
+      `;
+      expect(evaluateAll(input)).toEqual({ type: RuntimeType.NUMBER, value: 3 });
+    });
+
+    it('should not execute the body if the condition is false', () => {
+      const input = `
+        let x = 10;
+        while (false) {
+          x = 20;
+        };
+        x
+      `;
+      expect(evaluateAll(input)).toEqual({ type: RuntimeType.NUMBER, value: 10 });
+    });
+
+    it('should support complex body with multiple statements', () => {
+      const input = `
+        let i = 0;
+        let sum = 0;
+        while (i < 5) {
+          sum = sum + i;
+          i = i + 1;
+        };
+        sum
+      `;
+      expect(evaluateAll(input)).toEqual({ type: RuntimeType.NUMBER, value: 10 });
+    });
+
+    it('should support return from inside a while loop in a function', () => {
+      const input = `
+        fn findFirst(arr, target) {
+          let i = 0;
+          while (i < 3) {
+            if (arr[i] == target) {
+              return i;
+            };
+            i = i + 1;
+          };
+          return -1;
+        };
+        findFirst([10, 20, 30], 20)
+      `;
+      expect(evaluateAll(input)).toEqual({ type: RuntimeType.NUMBER, value: 1 });
+    });
+
+    it('should support nested while loops', () => {
+      const input = `
+        let i = 0;
+        let count = 0;
+        while (i < 3) {
+          let j = 0;
+          while (j < 3) {
+            count = count + 1;
+            j = j + 1;
+          };
+          i = i + 1;
+        };
+        count
+      `;
+      expect(evaluateAll(input)).toEqual({ type: RuntimeType.NUMBER, value: 9 });
+    });
+
+    describe('stop statement', () => {
+      it('should break out of a while loop', () => {
+        const input = `
+          let i = 0;
+          while (i < 10) {
+            if (i == 3) {
+              stop;
+            };
+            i = i + 1;
+          };
+          i
+        `;
+        expect(evaluateAll(input)).toEqual({ type: RuntimeType.NUMBER, value: 3 });
+      });
+
+      it('should break only the innermost loop', () => {
+        const input = `
+          let i = 0;
+          let count = 0;
+          while (i < 3) {
+            let j = 0;
+            while (j < 10) {
+              if (j == 2) {
+                stop;
+              };
+              count = count + 1;
+              j = j + 1;
+            };
+            i = i + 1;
+          };
+          count
+        `;
+        expect(evaluateAll(input)).toEqual({ type: RuntimeType.NUMBER, value: 6 });
+      });
+
+      it('should throw error when stop is used outside of a loop', () => {
+        expect(() => evaluate('stop')).toThrow('stop outside of loop');
+      });
+
+      it('should throw error when stop is used in a function but outside of a loop', () => {
+        const input = 'fn f() { stop }; f()';
+        expect(() => evaluateAll(input)).toThrow('stop outside of loop');
+      });
+
+      it('should work correctly with return inside a loop', () => {
+        const input = `
+          fn f() {
+            let i = 0;
+            while (i < 10) {
+              if (i == 2) {
+                return i;
+              };
+              i = i + 1;
+            };
+            return -1;
+          };
+          f()
+        `;
+        expect(evaluateAll(input)).toEqual({ type: RuntimeType.NUMBER, value: 2 });
+      });
+    });
+  });
+
   describe('should throw an error', () => {
     it('should throw error for unknown node kind', () => {
       const unknownNode = { kind: 'UNKNOWN' } as any;

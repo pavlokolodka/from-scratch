@@ -17,6 +17,7 @@ export enum TokenType {
   TRUE = 'true',
   FALSE = 'false',
   RETURN = 'return',
+  BREAK = 'stop',
 
   // Operators
   ASSIGN = '=',

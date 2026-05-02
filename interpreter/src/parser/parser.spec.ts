@@ -3,6 +3,7 @@ import type {
   AssignStatement,
   BlockStatement,
   BooleanLiteral,
+  BreakStatement,
   CallExpression,
   ConstStatement,
   ExpressionStatement,
@@ -20,6 +21,7 @@ import type {
   Program,
   ReturnStatement,
   StringLiteral,
+  WhileStatement,
 } from './ast';
 import { Lexer } from '../lexer/lexer';
 import { NodeKind } from './ast';
@@ -59,6 +61,8 @@ function stringify(node: Node): string {
     }
     case NodeKind.NULL_LITERAL:
       return 'nil';
+    case NodeKind.BREAK_STATEMENT:
+      return 'stop';
     case NodeKind.IDENTIFIER:
       return (node as Identifier).value;
     case NodeKind.LET_STATEMENT: {
@@ -75,12 +79,16 @@ function stringify(node: Node): string {
     }
     case NodeKind.IF_STATEMENT: {
       const ifStmt = node as IfStatement;
-      let s = `(if ${stringify(ifStmt.condition)} ${stringify(ifStmt.consequence)}`;
+      let s = `(if ${stringify(ifStmt.condition)} ${stringify(ifStmt.body)}`;
       if (ifStmt.alternative) {
         s += ` ${stringify(ifStmt.alternative)}`;
       }
       s += ')';
       return s;
+    }
+    case NodeKind.WHILE_STATEMENT: {
+      const whileStmt = node as WhileStatement;
+      return `(while ${stringify(whileStmt.condition)} ${stringify(whileStmt.body)})`;
     }
     case NodeKind.FUNCTION_DECLARATION: {
       const fn = node as FunctionDeclaration;
@@ -619,6 +627,53 @@ describe('Parser', () => {
       { input: 'if (true) { 10 } elif (false) 20', desc: 'missing elif block braces' },
     ])('should throw for $desc: $input', ({ input }) => {
       expect(() => parse(input)).toThrow();
+    });
+  });
+
+  describe('while statements', () => {
+    it.each([
+      { input: 'while (true) { 10 }', expected: '(while true (block 10))' },
+      { input: 'while (x < 10) { x = x + 1 }', expected: '(while (< x 10) (block (= x (+ x 1))))' },
+      {
+        input: 'while (i < 5) { sum = sum + i; i = i + 1; }',
+        expected: '(while (< i 5) (block (= sum (+ sum i)) (= i (+ i 1))))',
+      },
+    ])('should parse $input to $expected', ({ input, expected }) => {
+      expect(stringify(parse(input))).toBe(expected);
+    });
+
+    it.each([
+      { input: 'while true { 10 }', desc: 'missing condition parens' },
+      { input: 'while (true { 10 }', desc: 'missing condition parens' },
+      { input: 'while )true { 10 }', desc: 'missing condition parens' },
+      { input: 'while true) { 10 }', desc: 'missing condition parens' },
+      { input: 'while (true) 10', desc: 'missing block braces' },
+      { input: 'while (true) { 10', desc: 'missing block braces' },
+      { input: 'while (true) } 10', desc: 'missing block braces' },
+      { input: 'while (true) 10 }', desc: 'missing block braces' },
+    ])('should throw for $desc: $input', ({ input }) => {
+      expect(() => parse(input)).toThrow();
+    });
+  });
+
+  describe('stop statements', () => {
+    it('should parse stop statement', () => {
+      expect(stringify(parse('stop'))).toBe('stop');
+    });
+
+    it('should parse stop statement in a while loop', () => {
+      const input = 'while (true) { stop }';
+      expect(stringify(parse(input))).toBe('(while true (block stop))');
+    });
+
+    it('should parse stop statement with semicolon', () => {
+      expect(stringify(parse('stop;'))).toBe('stop');
+    });
+
+    it('should parse stop statement AST node fields', () => {
+      const stmt = parse('stop').statements[0] as BreakStatement;
+      expect(stmt.kind).toBe(NodeKind.BREAK_STATEMENT);
+      expect(stmt.tokenLiteral()).toBe('stop');
     });
   });
 });

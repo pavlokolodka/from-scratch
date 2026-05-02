@@ -1,5 +1,6 @@
 import type { ArrayValue } from './values/array.value';
 import type { BooleanValue } from './values/boolean.value';
+import type { BreakValue } from './values/break.value';
 import type { FunctionValue } from './values/function.value';
 import type { IdentifierValue } from './values/identifier.value';
 import type { NullValueClass } from './values/null.value';
@@ -18,6 +19,7 @@ export enum RuntimeType {
   FUNCTION = 'FUNCTION',
   ARRAY = 'ARRAY',
   RETURN = 'RETURN',
+  BREAK = 'BREAK',
 }
 
 export interface RuntimeValue {
@@ -34,5 +36,6 @@ export type RuntimeValueMap = {
   [RuntimeType.ARRAY]: ArrayValue;
   [RuntimeType.FUNCTION]: FunctionValue;
   [RuntimeType.RETURN]: ReturnValue;
+  [RuntimeType.BREAK]: BreakValue;
   [RuntimeType.IDENTIFIER]: IdentifierValue;
 };

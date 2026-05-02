@@ -2,6 +2,7 @@ import type {
   ArrayLiteral,
   AssignStatement,
   BlockStatement,
+  BreakStatement,
   CallExpression,
   ConstStatement,
   FunctionDeclaration,
@@ -14,6 +15,7 @@ import type {
   Node,
   PrefixExpression,
   ReturnStatement,
+  WhileStatement,
 } from '../parser/ast';
 import type { RuntimeValue } from './interpreter.interface';
 import { isNode, NodeKind, NumberOperator, PrefixOperator } from '../parser/ast';
@@ -22,6 +24,7 @@ import { RuntimeType } from './interpreter.interface';
 import { isType } from './is-type';
 import { ArrayValue } from './values/array.value';
 import { BooleanValue } from './values/boolean.value';
+import { BreakValue } from './values/break.value';
 import { FunctionValue } from './values/function.value';
 import { IdentifierValue, IdentifierValueInternal } from './values/identifier.value';
 import { NullValue } from './values/null.value';
@@ -32,6 +35,8 @@ import { VoidValue } from './values/void.value';
 
 export class Interpreter {
   private _callDepth = 0;
+
+  private _loopDepth = 0;
 
   eval(ast: Node, env: Environment): RuntimeValue {
     if (isNode(ast, NodeKind.NUMBER_LITERAL)) return new NumberValue(ast.value);
@@ -51,8 +56,10 @@ export class Interpreter {
     if (isNode(ast, NodeKind.BLOCK_STATEMENT)) return this._evalBlockStmt(ast, env);
     if (isNode(ast, NodeKind.FUNCTION_DECLARATION)) return this._evalFunctionStmt(ast, env);
     if (isNode(ast, NodeKind.IF_STATEMENT)) return this._evalIfStatement(ast, env);
+    if (isNode(ast, NodeKind.WHILE_STATEMENT)) return this._evalWhileStatement(ast, env);
     if (isNode(ast, NodeKind.CALL_EXPRESSION)) return this._evalCallExpr(ast, env);
     if (isNode(ast, NodeKind.RETURN_STATEMENT)) return this._evalReturnStmt(ast, env);
+    if (isNode(ast, NodeKind.BREAK_STATEMENT)) return this._evalBreakStmt(ast, env);
 
     throw new Error(`AST have no implementation ${JSON.stringify(ast)}`);
   }
@@ -101,6 +108,13 @@ export class Interpreter {
     return elements[idx];
   }
 
+  private _evalBreakStmt(stmt: BreakStatement, env: Environment): BreakValue {
+    if (this._loopDepth === 0) {
+      throw new Error('stop outside of loop');
+    }
+    return new BreakValue(VoidValue);
+  }
+
   private _evalReturnStmt(stmt: ReturnStatement, env: Environment): ReturnValue {
     if (this._callDepth === 0) {
       throw new Error('return outside of function');
@@ -142,11 +156,36 @@ export class Interpreter {
     return VoidValue;
   }
 
+  private _evalWhileStatement(node: WhileStatement, env: Environment): RuntimeValue {
+    let condition = this.eval(node.condition, env);
+
+    this._loopDepth++;
+
+    while (this._isTruthy(condition)) {
+      const result = this.eval(node.body, env);
+
+      if (isType(result, RuntimeType.RETURN)) {
+        this._loopDepth--;
+        return result;
+      }
+
+      if (isType(result, RuntimeType.BREAK)) {
+        break;
+      }
+
+      condition = this.eval(node.condition, env);
+    }
+
+    this._loopDepth--;
+
+    return VoidValue;
+  }
+
   private _evalIfStatement(node: IfStatement, env: Environment): RuntimeValue {
     const condition = this.eval(node.condition, env);
 
     if (this._isTruthy(condition)) {
-      return this.eval(node.consequence, env);
+      return this.eval(node.body, env);
     } else if (node.alternative) {
       return this.eval(node.alternative, env);
     }
@@ -159,7 +198,7 @@ export class Interpreter {
 
     for (const lstmt of stmt.statements) {
       const result = this.eval(lstmt, localEnv);
-      if (isType(result, RuntimeType.RETURN)) return result;
+      if (isType(result, RuntimeType.RETURN) || isType(result, RuntimeType.BREAK)) return result;
     }
 
     return VoidValue;

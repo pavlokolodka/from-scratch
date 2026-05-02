@@ -3,14 +3,13 @@ import type { Expression, Statement } from '../ast.interface';
 import type { BlockStatement } from './block.statement';
 import { NodeKind } from '../ast.interface';
 
-export class IfStatement implements Statement {
-  readonly kind = NodeKind.IF_STATEMENT;
+export class WhileStatement implements Statement {
+  readonly kind = NodeKind.WHILE_STATEMENT;
 
   constructor(
     public readonly token: Token,
     public readonly condition: Expression,
     public readonly body: BlockStatement,
-    public readonly alternative: IfStatement | BlockStatement | null,
   ) {}
 
   tokenLiteral(): string {

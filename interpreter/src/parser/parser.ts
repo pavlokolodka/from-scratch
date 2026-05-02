@@ -24,7 +24,9 @@ import {
   Program,
   ReturnStatement,
   StringLiteral,
+  WhileStatement,
 } from './ast';
+import { BreakStatement } from './ast/statements/break.statement';
 import { __DEV__, toDebugToken } from './debug';
 import assert from 'node:assert';
 
@@ -85,8 +87,12 @@ export class Parser {
         return this._parseFunctionStatement();
       case TokenType.IF:
         return this._parseIfStatement();
+      case TokenType.WHILE:
+        return this._parseWhileStatement();
       case TokenType.RETURN:
         return this._parseReturnStatement();
+      case TokenType.BREAK:
+        return this._parseBreakStatement();
       case TokenType.IDENT:
         if (this._peekTokenIs(TokenType.ASSIGN)) {
           return this._parseAssignStatement();
@@ -95,6 +101,25 @@ export class Parser {
       default:
         return this._parseExpressionStatement();
     }
+  }
+
+  private _parseWhileStatement(): WhileStatement {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.WHILE),
+        `_parseIfStatement called with non-WHILE token: ${toDebugToken(this._currentToken)}`,
+      );
+
+    const token = this._currentToken;
+    const condition = this._parseCondition();
+
+    if (!this._expectPeek(TokenType.LBRACE)) {
+      throw new Error(`Expected '{', got ${toDebugToken(this._peekToken)}`);
+    }
+
+    const body = this._parseBlockStatement();
+
+    return new WhileStatement(token, condition, body);
   }
 
   private _parseArray(): ArrayLiteral {
@@ -130,6 +155,18 @@ export class Parser {
     }
 
     return new ArrayLiteral(token, expression);
+  }
+
+  private _parseBreakStatement(): BreakStatement {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.BREAK),
+        `_parseReturnStatement called with non-BREAK token: ${toDebugToken(this._currentToken)}`,
+      );
+
+    const token = this._currentToken;
+
+    return new BreakStatement(token);
   }
 
   private _parseReturnStatement(): ReturnStatement {
@@ -221,18 +258,18 @@ export class Parser {
     const token = this._currentToken;
     const statements: Statement[] = [];
 
-    while (!this._peekTokenIs(TokenType.RBRACE)) {
+    while (!this._peekTokenIs(TokenType.RBRACE) && !this._peekTokenIs(TokenType.EOF)) {
       this._nextToken();
 
       const stm = this._parseStatement();
-      if (stm === null) {
-        throw new Error('Closing parentheses not found');
+      if (stm !== null) {
+        statements.push(stm);
       }
-
-      statements.push(stm);
     }
 
-    this._nextToken();
+    if (!this._expectPeek(TokenType.RBRACE)) {
+      throw new Error(`Expected '}', got ${toDebugToken(this._peekToken)}`);
+    }
 
     return new BlockStatement(token, statements);
   }
@@ -245,23 +282,13 @@ export class Parser {
       );
 
     const token = this._currentToken;
-
-    if (!this._expectPeek(TokenType.LPAREN)) {
-      throw new Error(`Expected '(', got ${toDebugToken(this._peekToken)}`);
-    }
-
-    this._nextToken();
-    const condition = this._parseExpression(this._lowPrecedence);
-
-    if (!this._expectPeek(TokenType.RPAREN)) {
-      throw new Error(`Expected ')', got ${toDebugToken(this._peekToken)}`);
-    }
+    const condition = this._parseCondition();
 
     if (!this._expectPeek(TokenType.LBRACE)) {
       throw new Error(`Expected '{', got ${toDebugToken(this._peekToken)}`);
     }
 
-    const consequence = this._parseBlockStatement();
+    const body = this._parseBlockStatement();
 
     let alternative: IfStatement | BlockStatement | null = null;
 
@@ -276,7 +303,22 @@ export class Parser {
       alternative = this._parseBlockStatement();
     }
 
-    return new IfStatement(token, condition, consequence, alternative);
+    return new IfStatement(token, condition, body, alternative);
+  }
+
+  private _parseCondition(): Expression {
+    if (!this._expectPeek(TokenType.LPAREN)) {
+      throw new Error(`Expected '(', got ${toDebugToken(this._peekToken)}`);
+    }
+
+    this._nextToken();
+    const condition = this._parseExpression(this._lowPrecedence);
+
+    if (!this._expectPeek(TokenType.RPAREN)) {
+      throw new Error(`Expected ')', got ${toDebugToken(this._peekToken)}`);
+    }
+
+    return condition;
   }
 
   private _parseLetStatement(): LetStatement {

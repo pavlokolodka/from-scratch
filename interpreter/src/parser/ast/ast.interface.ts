@@ -11,6 +11,7 @@ import type { StringLiteral } from './expressions/string-literal.expression';
 import type { Program } from './program.node';
 import type { AssignStatement } from './statements/assign.statement';
 import type { BlockStatement } from './statements/block.statement';
+import type { BreakStatement } from './statements/break.statement';
 import type { ConstStatement } from './statements/const.statement';
 import type { ExpressionStatement } from './statements/expression.statement';
 import type { FunctionDeclaration } from './statements/function-declaration.statement';
@@ -18,6 +19,7 @@ import type { IfStatement } from './statements/if.statement';
 import type { IndexAssignStatement } from './statements/index-assign.statement';
 import type { LetStatement } from './statements/let.statement';
 import type { ReturnStatement } from './statements/return.statement';
+import type { WhileStatement } from './statements/while.statement';
 
 export enum NodeKind {
   PROGRAM = 'PROGRAM',
@@ -26,12 +28,14 @@ export enum NodeKind {
   LET_STATEMENT = 'LET_STATEMENT',
   CONST_STATEMENT = 'CONST_STATEMENT',
   RETURN_STATEMENT = 'RETURN_STATEMENT',
+  BREAK_STATEMENT = 'BREAK_STATEMENT',
   ASSIGN_STATEMENT = 'ASSIGN_STATEMENT',
   INDEX_ASSIGN_STATEMENT = 'INDEX_ASSIGN_STATEMENT',
   EXPRESSION_STATEMENT = 'EXPRESSION_STATEMENT',
   BLOCK_STATEMENT = 'BLOCK_STATEMENT',
   FUNCTION_DECLARATION = 'FUNCTION_DECLARATION',
   IF_STATEMENT = 'IF_STATEMENT',
+  WHILE_STATEMENT = 'WHILE_STATEMENT',
 
   // Expressions
   IDENTIFIER = 'IDENTIFIER',
@@ -44,8 +48,6 @@ export enum NodeKind {
 
   PREFIX_EXPRESSION = 'PREFIX_EXPRESSION',
   INFIX_EXPRESSION = 'INFIX_EXPRESSION',
-  IF_EXPRESSION = 'IF_EXPRESSION',
-  WHILE_EXPRESSION = 'WHILE_EXPRESSION',
   CALL_EXPRESSION = 'CALL_EXPRESSION',
   INDEX_EXPRESSION = 'INDEX_EXPRESSION',
 }
@@ -79,5 +81,7 @@ export type NodeKindMap = {
   [NodeKind.BLOCK_STATEMENT]: BlockStatement;
   [NodeKind.FUNCTION_DECLARATION]: FunctionDeclaration;
   [NodeKind.RETURN_STATEMENT]: ReturnStatement;
+  [NodeKind.BREAK_STATEMENT]: BreakStatement;
   [NodeKind.IF_STATEMENT]: IfStatement;
+  [NodeKind.WHILE_STATEMENT]: WhileStatement;
 };

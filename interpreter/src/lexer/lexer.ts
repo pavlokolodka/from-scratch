@@ -24,6 +24,7 @@ export class Lexer {
     true: TokenType.TRUE,
     false: TokenType.FALSE,
     return: TokenType.RETURN,
+    stop: TokenType.BREAK,
   };
 
   constructor(input: string) {
