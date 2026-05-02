@@ -108,7 +108,7 @@ export class Interpreter {
     return elements[idx];
   }
 
-  private _evalBreakStmt(stmt: BreakStatement, env: Environment): BreakValue {
+  private _evalBreakStmt(_stmt: BreakStatement, _env: Environment): BreakValue {
     if (this._loopDepth === 0) {
       throw new Error('stop outside of loop');
     }
@@ -124,6 +124,11 @@ export class Interpreter {
 
   private _evalCallExpr(expr: CallExpression, env: Environment): RuntimeValue {
     const func = this._evalIdentifier(expr.identifier, env);
+
+    if (isType(func, RuntimeType.BUILTIN_FN)) {
+      const args = expr.args.map((arg) => this.eval(arg, env));
+      return func.fn(args);
+    }
 
     if (!isType(func, RuntimeType.FUNCTION)) {
       throw new Error(`${expr.identifier.value} is not a function`);

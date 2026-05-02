@@ -16,7 +16,7 @@ describe('Interpreter', () => {
   function evaluate(input: string) {
     const lexer = new Lexer(input);
     const parser = new Parser(lexer.tokenize());
-    const env = new Environment();
+    const env = Environment.createGlobal();
     const program = parser.parse();
 
     const stmt = program.statements[0];
@@ -27,7 +27,7 @@ describe('Interpreter', () => {
   function evaluateAll(input: string) {
     const lexer = new Lexer(input);
     const parser = new Parser(lexer.tokenize());
-    const env = new Environment();
+    const env = Environment.createGlobal();
     const program = parser.parse();
 
     let result: ReturnType<typeof interpreter.eval>;

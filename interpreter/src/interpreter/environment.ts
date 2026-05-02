@@ -1,8 +1,17 @@
 import type { RuntimeValue } from './interpreter.interface';
-import type { IdentifierValue } from './values/identifier.value';
-import { IdentifierValueMeta } from './values/identifier.value';
+import { NodeKind } from '../parser/ast';
+import { builtins } from './builtins';
+import { IdentifierValue, IdentifierValueMeta } from './values/identifier.value';
 
 export class Environment {
+  static createGlobal(): Environment {
+    const env = new Environment();
+    for (const [name, value] of Object.entries(builtins)) {
+      env.declare(new IdentifierValue(name, NodeKind.CONST_STATEMENT), value);
+    }
+    return env;
+  }
+
   private readonly _outer: Environment | undefined;
 
   private readonly _env: Map<string, [RuntimeValue, IdentifierValueMeta]>;
