@@ -1,3 +1,5 @@
+import type { SourceLocation } from '../errors/error.interface';
+
 export enum TokenType {
   // Identifiers + literals
   IDENT = 'IDENT',
@@ -53,5 +55,5 @@ export enum TokenType {
 export interface Token {
   type: TokenType;
   literal: string;
-  line: number;
+  location: SourceLocation;
 }

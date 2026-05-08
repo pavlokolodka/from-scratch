@@ -11,7 +11,11 @@ export class AssignStatement implements Statement {
     public readonly right: Expression,
   ) {}
 
-  tokenLiteral(): string {
+  get location() {
+    return this.token.location;
+  }
+
+  get tokenLiteral(): string {
     return this.token.literal;
   }
 }

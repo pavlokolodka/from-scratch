@@ -1,3 +1,4 @@
+import { ErrorReporter, InterpreterError } from '../core/errors';
 import { stringifyOutput } from '../core/interpreter/builtins';
 import { Runner } from '../core/runner';
 import * as readline from 'node:readline';
@@ -27,7 +28,14 @@ export function startRepl() {
         const result = runner.run(input);
         console.log(stringifyOutput(result));
       } catch (error) {
-        console.error('Error:', error instanceof Error ? error.message : String(error));
+        if (error instanceof InterpreterError) {
+          console.error(ErrorReporter.report(error, input));
+        } else {
+          console.error(
+            'Unexpected Error:',
+            error instanceof Error ? error.message : String(error),
+          );
+        }
       }
     }
 

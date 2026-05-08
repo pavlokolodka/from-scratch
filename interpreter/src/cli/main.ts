@@ -1,3 +1,4 @@
+import { ErrorReporter, InterpreterError } from '../core/errors';
 import { Runner } from '../core/runner';
 import { startRepl } from './repl';
 import * as fs from 'node:fs';
@@ -22,7 +23,11 @@ function main() {
   try {
     runner.run(code);
   } catch (error) {
-    console.error('Error:', error instanceof Error ? error.message : String(error));
+    if (error instanceof InterpreterError) {
+      console.error(ErrorReporter.report(error, code));
+    } else {
+      console.error('Unexpected Error:', error instanceof Error ? error.message : String(error));
+    }
     process.exit(1);
   }
 }

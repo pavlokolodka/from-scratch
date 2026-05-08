@@ -159,7 +159,7 @@ describe('Parser', () => {
       const expr = (program.statements[0] as ExpressionStatement).expression as BooleanLiteral;
       expect(expr.kind).toBe(NodeKind.BOOLEAN_LITERAL);
       expect(expr.value).toBe(true);
-      expect(expr.tokenLiteral()).toBe('true');
+      expect(expr.tokenLiteral).toBe('true');
     });
 
     it('should parse boolean AST node fields for false', () => {
@@ -167,7 +167,7 @@ describe('Parser', () => {
       const expr = (program.statements[0] as ExpressionStatement).expression as BooleanLiteral;
       expect(expr.kind).toBe(NodeKind.BOOLEAN_LITERAL);
       expect(expr.value).toBe(false);
-      expect(expr.tokenLiteral()).toBe('false');
+      expect(expr.tokenLiteral).toBe('false');
     });
 
     it('should parse let declaration with boolean', () => {
@@ -189,7 +189,7 @@ describe('Parser', () => {
       const program = parse('nil');
       const expr = (program.statements[0] as ExpressionStatement).expression as NullLiteral;
       expect(expr.kind).toBe(NodeKind.NULL_LITERAL);
-      expect(expr.tokenLiteral()).toBe('nil');
+      expect(expr.tokenLiteral).toBe('nil');
     });
 
     it('should parse let declaration with nil', () => {
@@ -276,7 +276,7 @@ describe('Parser', () => {
       it('should parse AST node fields for arr[0] = 5', () => {
         const stmt = parse('arr[0] = 5').statements[0] as IndexAssignStatement;
         expect(stmt.kind).toBe(NodeKind.INDEX_ASSIGN_STATEMENT);
-        expect(stmt.tokenLiteral()).toBe('arr');
+        expect(stmt.tokenLiteral).toBe('arr');
         expect((stmt.left.left as Identifier).value).toBe('arr');
         expect((stmt.left.index as NumberLiteral).value).toBe(0);
         expect((stmt.right as NumberLiteral).value).toBe(5);
@@ -564,7 +564,7 @@ describe('Parser', () => {
 
     it('should parse return statement AST node fields', () => {
       const stmt = parse('return 5').statements[0] as ReturnStatement;
-      expect(stmt.tokenLiteral()).toBe('return');
+      expect(stmt.tokenLiteral).toBe('return');
       expect((stmt.value as NumberLiteral).value).toBe(5);
     });
 
@@ -673,7 +673,7 @@ describe('Parser', () => {
     it('should parse stop statement AST node fields', () => {
       const stmt = parse('stop').statements[0] as BreakStatement;
       expect(stmt.kind).toBe(NodeKind.BREAK_STATEMENT);
-      expect(stmt.tokenLiteral()).toBe('stop');
+      expect(stmt.tokenLiteral).toBe('stop');
     });
   });
 });

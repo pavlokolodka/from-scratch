@@ -7,7 +7,11 @@ export class BreakStatement implements Statement {
 
   constructor(public readonly token: Token) {}
 
-  tokenLiteral(): string {
+  get location() {
+    return this.token.location;
+  }
+
+  get tokenLiteral(): string {
     return this.token.literal;
   }
 }

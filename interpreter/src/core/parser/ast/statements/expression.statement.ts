@@ -9,7 +9,11 @@ export class ExpressionStatement implements Statement {
     public readonly expression: Expression,
   ) {}
 
-  tokenLiteral(): string {
+  get location() {
+    return this.token.location;
+  }
+
+  get tokenLiteral(): string {
     return this.token.literal;
   }
 }

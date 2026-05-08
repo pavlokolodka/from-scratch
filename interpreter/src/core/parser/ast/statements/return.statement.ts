@@ -10,7 +10,11 @@ export class ReturnStatement implements Statement {
     public readonly value: Expression,
   ) {}
 
-  tokenLiteral(): string {
+  get location() {
+    return this.token.location;
+  }
+
+  get tokenLiteral(): string {
     return this.token.literal;
   }
 }

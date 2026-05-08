@@ -1,5 +1,7 @@
+import type { SourceLocation } from '../errors';
 import type { BuiltInOptions } from './builtins';
 import type { RuntimeValue } from './interpreter.interface';
+import { ScopeError } from '../errors';
 import { NodeKind } from '../parser/ast';
 import { createBuiltins } from './builtins';
 import { IdentifierValue, IdentifierValueMeta } from './values/identifier.value';
@@ -9,7 +11,12 @@ export class Environment {
     const env = new Environment();
     const builtins = createBuiltins(options);
     for (const [name, value] of Object.entries(builtins)) {
-      env.declare(new IdentifierValue(name, NodeKind.CONST_STATEMENT), value);
+      env.declare(new IdentifierValue(name, NodeKind.CONST_STATEMENT), value, {
+        line: 0,
+        column: 0,
+        offset: 0,
+        length: 0,
+      });
     }
     return env;
   }
@@ -23,39 +30,39 @@ export class Environment {
     this._env = new Map();
   }
 
-  assign(variable: IdentifierValue, value: RuntimeValue): void {
-    const env = this._resolve(variable);
+  assign(variable: IdentifierValue, value: RuntimeValue, location: SourceLocation): void {
+    const env = this._resolve(variable, location);
     env._set(variable, value);
   }
 
-  declare(variable: IdentifierValue, value: RuntimeValue): void {
+  declare(variable: IdentifierValue, value: RuntimeValue, location: SourceLocation): void {
     if (this._contains(variable)) {
-      throw new Error(`Error: redeclaration of ${variable}`);
+      throw new ScopeError(`redeclaration of ${variable.value}`, location);
     }
 
     this._set(variable, value);
   }
 
-  checkMeta(varialbe: IdentifierValue): IdentifierValueMeta | null {
+  checkMeta(varialbe: IdentifierValue, location: SourceLocation): IdentifierValueMeta | null {
     try {
-      const env = this._resolve(varialbe);
+      const env = this._resolve(varialbe, location);
       return env._getMeta(varialbe);
     } catch {
       return null;
     }
   }
 
-  lookup(varialbe: IdentifierValue): RuntimeValue {
-    const env = this._resolve(varialbe);
+  lookup(varialbe: IdentifierValue, location: SourceLocation): RuntimeValue {
+    const env = this._resolve(varialbe, location);
     return env._get(varialbe);
   }
 
-  private _resolve(variable: IdentifierValue): Environment {
+  private _resolve(variable: IdentifierValue, location: SourceLocation): Environment {
     if (this._contains(variable)) return this;
 
-    if (this._outer) return this._outer._resolve(variable);
+    if (this._outer) return this._outer._resolve(variable, location);
 
-    throw new Error(`Error: ${variable} was not declared in this scope`);
+    throw new ScopeError(`${variable.value} was not declared in this scope`, location);
   }
 
   private _get(variable: IdentifierValue): RuntimeValue {

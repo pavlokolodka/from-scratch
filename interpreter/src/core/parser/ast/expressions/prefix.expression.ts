@@ -19,7 +19,11 @@ export class PrefixExpression implements Expression {
     this.operator = token.literal as PrefixOperator;
   }
 
-  tokenLiteral(): string {
+  get location() {
+    return this.token.location;
+  }
+
+  get tokenLiteral(): string {
     return this.token.literal;
   }
 }

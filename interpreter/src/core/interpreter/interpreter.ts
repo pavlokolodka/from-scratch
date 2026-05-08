@@ -19,6 +19,7 @@ import type {
   WhileStatement,
 } from '../parser/ast';
 import type { RuntimeValue } from './interpreter.interface';
+import { RuntimeError } from '../errors';
 import { isNode, NodeKind, NumberOperator, PrefixOperator } from '../parser/ast';
 import { Environment } from './environment';
 import { RuntimeType } from './interpreter.interface';
@@ -63,7 +64,10 @@ export class Interpreter {
     if (isNode(ast, NodeKind.RETURN_STATEMENT)) return this._evalReturnStmt(ast, env);
     if (isNode(ast, NodeKind.BREAK_STATEMENT)) return this._evalBreakStmt(ast, env);
 
-    throw new Error(`AST have no implementation ${JSON.stringify(ast)}`);
+    throw new RuntimeError(
+      `AST have no implementation ${JSON.stringify(ast)}`,
+      ast.location || { line: 0, column: 0, offset: 0, length: 0 },
+    );
   }
 
   private _evalPrefixExpression(node: PrefixExpression, env: Environment): RuntimeValue {
@@ -76,11 +80,14 @@ export class Interpreter {
         return new BooleanValue(this._isTruthy(right));
       case PrefixOperator.MINUS:
         if (!isType(right, RuntimeType.NUMBER)) {
-          throw new Error(`Operator '-' not supported for type ${right.type}`);
+          throw new RuntimeError(
+            `Operator '-' not supported for type ${right.type}`,
+            node.location,
+          );
         }
         return new NumberValue(-right.value);
       default:
-        throw new Error(`Unknown operator: ${node.operator}`);
+        throw new RuntimeError(`Unknown operator: ${node.operator}`, node.location);
     }
   }
 
@@ -93,33 +100,33 @@ export class Interpreter {
     const index = this.eval(node.index, env);
 
     if (array.type !== RuntimeType.ARRAY) {
-      throw new Error(`Index operator not supported for type ${array.type}`);
+      throw new RuntimeError(`Index operator not supported for type ${array.type}`, node.location);
     }
 
     if (index.type !== RuntimeType.NUMBER) {
-      throw new Error(`Index must be a number, got ${index.type}`);
+      throw new RuntimeError(`Index must be a number, got ${index.type}`, node.location);
     }
 
     const elements = (array as ArrayValue).value;
     const idx = (index as NumberValue).value;
 
     if (!Number.isInteger(idx) || idx < 0 || idx >= elements.length) {
-      throw new Error(`Index out of bounds: ${idx}`);
+      throw new RuntimeError(`Index out of bounds: ${idx}`, node.location);
     }
 
     return elements[idx];
   }
 
-  private _evalBreakStmt(_stmt: BreakStatement, _env: Environment): BreakValue {
+  private _evalBreakStmt(stmt: BreakStatement, _env: Environment): BreakValue {
     if (this._loopDepth === 0) {
-      throw new Error('stop outside of loop');
+      throw new RuntimeError('stop outside of loop', stmt.location);
     }
     return new BreakValue(VoidValue);
   }
 
   private _evalReturnStmt(stmt: ReturnStatement, env: Environment): ReturnValue {
     if (this._callDepth === 0) {
-      throw new Error('return outside of function');
+      throw new RuntimeError('return outside of function', stmt.location);
     }
     return new ReturnValue(this.eval(stmt.value, env));
   }
@@ -133,18 +140,21 @@ export class Interpreter {
     }
 
     if (!isType(func, RuntimeType.FUNCTION)) {
-      throw new Error(`${expr.identifier.value} is not a function`);
+      throw new RuntimeError(`${expr.identifier.value} is not a function`, expr.location);
     }
 
     if (expr.args.length !== func.parameters.length) {
-      throw new Error(`Expected ${func.parameters.length} argument(s) but got ${expr.args.length}`);
+      throw new RuntimeError(
+        `Expected ${func.parameters.length} argument(s) but got ${expr.args.length}`,
+        expr.location,
+      );
     }
 
     const funcEnv = new Environment(func.environment);
 
     for (let i = 0; i < func.parameters.length; i++) {
       const param = new IdentifierValue(func.parameters[i].value, NodeKind.LET_STATEMENT);
-      funcEnv.declare(param, this.eval(expr.args[i], env));
+      funcEnv.declare(param, this.eval(expr.args[i], env), expr.args[i].location);
     }
 
     this._callDepth++;
@@ -158,7 +168,7 @@ export class Interpreter {
     const ident = new IdentifierValue(stmt.name.value, stmt.kind);
     const value = new FunctionValue(stmt.parameters, stmt.body, env);
 
-    env.declare(ident, value);
+    env.declare(ident, value, stmt.location);
 
     return VoidValue;
   }
@@ -215,7 +225,7 @@ export class Interpreter {
     const identifier = new IdentifierValue(stmt.left.value, stmt.kind);
     const value = this.eval(stmt.right, env);
 
-    env.declare(identifier, value);
+    env.declare(identifier, value, stmt.location);
 
     return value;
   }
@@ -226,18 +236,18 @@ export class Interpreter {
     const value = this.eval(stmt.right, env);
 
     if (array.type !== RuntimeType.ARRAY) {
-      throw new Error(`Index operator not supported for type ${array.type}`);
+      throw new RuntimeError(`Index operator not supported for type ${array.type}`, stmt.location);
     }
 
     if (index.type !== RuntimeType.NUMBER) {
-      throw new Error(`Index must be a number, got ${index.type}`);
+      throw new RuntimeError(`Index must be a number, got ${index.type}`, stmt.location);
     }
 
     const elements = (array as ArrayValue).value;
     const idx = (index as NumberValue).value;
 
     if (!Number.isInteger(idx) || idx < 0 || idx >= elements.length) {
-      throw new Error(`Index out of bounds: ${idx}`);
+      throw new RuntimeError(`Index out of bounds: ${idx}`, stmt.location);
     }
 
     elements[idx] = value;
@@ -249,20 +259,20 @@ export class Interpreter {
     const identifier = new IdentifierValueInternal(stmt.left.value);
     const value = this.eval(stmt.right, env);
 
-    const meta = env.checkMeta(identifier);
+    const meta = env.checkMeta(identifier, stmt.location);
 
     if (meta && meta.kind === NodeKind.CONST_STATEMENT) {
-      throw new Error(`Error: assignment to constant variable`);
+      throw new RuntimeError(`assignment to constant variable`, stmt.location);
     }
 
-    env.assign(identifier, value);
+    env.assign(identifier, value, stmt.location);
 
     return VoidValue;
   }
 
   private _evalIdentifier(node: Identifier, env: Environment): RuntimeValue {
     const identifier = new IdentifierValueInternal(node.value);
-    return env.lookup(identifier);
+    return env.lookup(identifier, node.location);
   }
 
   private _evalInfix(exp: InfixExpression, env: Environment): RuntimeValue {
@@ -281,8 +291,9 @@ export class Interpreter {
       return new BooleanValue(left.value !== right.value);
     }
 
-    throw new Error(
+    throw new RuntimeError(
       `Unexpected infix operands left: ${JSON.stringify(left)}, right: ${JSON.stringify(right)}`,
+      exp.location,
     );
   }
 

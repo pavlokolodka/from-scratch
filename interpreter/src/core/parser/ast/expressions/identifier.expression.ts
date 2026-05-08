@@ -10,7 +10,11 @@ export class Identifier implements Expression {
     this.value = token.literal;
   }
 
-  tokenLiteral(): string {
+  get location() {
+    return this.token.location;
+  }
+
+  get tokenLiteral(): string {
     return this.token.literal;
   }
 }

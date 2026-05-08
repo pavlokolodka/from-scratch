@@ -9,7 +9,11 @@ export class BlockStatement implements Statement {
     public readonly statements: Statement[],
   ) {}
 
-  tokenLiteral(): string {
+  get location() {
+    return this.token.location;
+  }
+
+  get tokenLiteral(): string {
     return this.token.literal;
   }
 }

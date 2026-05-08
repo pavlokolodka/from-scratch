@@ -10,7 +10,11 @@ export class ArrayLiteral implements Expression {
     public readonly elements: Expression[],
   ) {}
 
-  tokenLiteral(): string {
+  get location() {
+    return this.token.location;
+  }
+
+  get tokenLiteral(): string {
     return this.token.literal;
   }
 }

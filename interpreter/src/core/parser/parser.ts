@@ -1,5 +1,6 @@
 import type { Token } from '../lexer/lexer.interface';
 import type { Expression, Statement } from './ast';
+import { ParseError } from '../errors';
 import { TokenType } from '../lexer/lexer.interface';
 import {
   ArrayLiteral,
@@ -52,7 +53,14 @@ export class Parser {
     this._peekToken = this._tokens[this._pos] || {
       type: TokenType.EOF,
       literal: '',
-      line: this._currentToken?.line || 1,
+      location: {
+        line: this._currentToken?.location.line || 1,
+        column:
+          (this._currentToken?.location.column || 0) + (this._currentToken?.literal.length || 0),
+        offset:
+          (this._currentToken?.location.offset || 0) + (this._currentToken?.literal.length || 0),
+        length: 0,
+      },
     };
     if (this._pos < this._tokens.length) {
       this._pos++;
@@ -114,7 +122,10 @@ export class Parser {
     const condition = this._parseCondition();
 
     if (!this._expectPeek(TokenType.LBRACE)) {
-      throw new Error(`Expected '{', got ${toDebugToken(this._peekToken)}`);
+      throw new ParseError(
+        `Expected '{', got '${this._peekToken.literal}'`,
+        this._peekToken.location,
+      );
     }
 
     const body = this._parseBlockStatement();
@@ -132,7 +143,7 @@ export class Parser {
     const token = this._currentToken;
 
     if (!this._expectPeekArrayToken() && !this._expectPeek(TokenType.RBRACKET)) {
-      throw new Error(`Unexpected token ${toDebugToken(this._currentToken)}`);
+      throw new ParseError(`'[' was never closed`, this._peekToken.location);
     }
 
     const expression: Expression[] = [];
@@ -142,15 +153,19 @@ export class Parser {
 
       if (this._expectPeek(TokenType.COMMA)) {
         if (!this._expectPeekArrayToken()) {
-          throw new Error(
-            `Expected array element after ',', got ${toDebugToken(this._currentToken)}`,
+          throw new ParseError(
+            `Expected array element after ',', got '${this._peekToken.literal}'`,
+            this._peekToken.location,
           );
         }
         continue;
       }
 
       if (!this._expectPeekArrayToken() && !this._expectPeek(TokenType.RBRACKET)) {
-        throw new Error(`Unexpected token ${toDebugToken(this._currentToken)}`);
+        throw new ParseError(
+          `Expected ',' or ']' after array element, found '${this._peekToken.literal}'`,
+          this._peekToken.location,
+        );
       }
     }
 
@@ -181,7 +196,7 @@ export class Parser {
     this._nextToken();
 
     if (this._currTokenIs(TokenType.EOF) || this._currTokenIs(TokenType.SEMICOLON)) {
-      throw new Error('Expected expression after return');
+      throw new ParseError('Expected expression after return', this._currentToken.location);
     }
 
     const value = this._parseExpression(this._lowPrecedence);
@@ -203,17 +218,26 @@ export class Parser {
     const token = this._currentToken;
 
     if (!this._expectPeek(TokenType.IDENT)) {
-      throw new Error('Function declaration require a function name');
+      throw new ParseError(
+        'Function declaration require a function name',
+        this._peekToken.location,
+      );
     }
 
     const ident = new Identifier(this._currentToken);
 
     if (!this._expectPeek(TokenType.LPAREN)) {
-      throw new Error(`Unexpected token ${toDebugToken(this._currentToken)}`);
+      throw new ParseError(
+        `Expected '(' after function name '${ident.tokenLiteral}', found '${this._peekToken.literal}'`,
+        this._peekToken.location,
+      );
     }
 
     if (!this._expectPeek(TokenType.IDENT) && !this._expectPeek(TokenType.RPAREN)) {
-      throw new Error(`Unexpected token ${toDebugToken(this._currentToken)}`);
+      throw new ParseError(
+        `Parameter list for '${ident.tokenLiteral}' was never closed. Expected ')'`,
+        this._peekToken.location,
+      );
     }
 
     const parameters: Identifier[] = [];
@@ -223,26 +247,33 @@ export class Parser {
 
       if (this._expectPeek(TokenType.COMMA)) {
         if (!this._expectPeek(TokenType.IDENT)) {
-          throw new Error(
-            `Expected parameter name after ',', got ${toDebugToken(this._currentToken)}`,
+          throw new ParseError(
+            `Expected parameter name after ',', got ${this._peekToken.literal}`,
+            this._peekToken.location,
           );
         }
         continue;
       }
 
       if (!this._expectPeek(TokenType.IDENT) && !this._expectPeek(TokenType.RPAREN)) {
-        throw new Error(`Unexpected token ${toDebugToken(this._currentToken)}`);
+        throw new ParseError(
+          `Parameter list for '${ident.tokenLiteral}' was never closed. Expected ')'`,
+          this._peekToken.location,
+        );
       }
     }
 
     if (!this._expectPeek(TokenType.LBRACE)) {
-      throw new Error(`Unexpected token ${toDebugToken(this._currentToken)}`);
+      throw new ParseError(
+        `Parameter list for '${ident.tokenLiteral}' was never closed. Expected ')'`,
+        this._peekToken.location,
+      );
     }
 
     const body = this._parseBlockStatement();
 
     if (!body) {
-      throw new Error(`Unexpected empty body`);
+      throw new ParseError(`Unexpected empty body`, this._currentToken.location);
     }
 
     return new FunctionDeclaration(token, ident, parameters, body);
@@ -268,7 +299,10 @@ export class Parser {
     }
 
     if (!this._expectPeek(TokenType.RBRACE)) {
-      throw new Error(`Expected '}', got ${toDebugToken(this._peekToken)}`);
+      throw new ParseError(
+        `Expected '}', got ${toDebugToken(this._peekToken)}`,
+        this._peekToken.location,
+      );
     }
 
     return new BlockStatement(token, statements);
@@ -285,7 +319,10 @@ export class Parser {
     const condition = this._parseCondition();
 
     if (!this._expectPeek(TokenType.LBRACE)) {
-      throw new Error(`Expected '{', got ${toDebugToken(this._peekToken)}`);
+      throw new ParseError(
+        `Expected '{', got ${toDebugToken(this._peekToken)}`,
+        this._peekToken.location,
+      );
     }
 
     const body = this._parseBlockStatement();
@@ -298,7 +335,10 @@ export class Parser {
     } else if (this._peekTokenIs(TokenType.ELSE)) {
       this._nextToken();
       if (!this._expectPeek(TokenType.LBRACE)) {
-        throw new Error(`Expected '{', got ${toDebugToken(this._peekToken)}`);
+        throw new ParseError(
+          `Expected '{', got ${toDebugToken(this._peekToken)}`,
+          this._peekToken.location,
+        );
       }
       alternative = this._parseBlockStatement();
     }
@@ -308,14 +348,20 @@ export class Parser {
 
   private _parseCondition(): Expression {
     if (!this._expectPeek(TokenType.LPAREN)) {
-      throw new Error(`Expected '(', got ${toDebugToken(this._peekToken)}`);
+      throw new ParseError(
+        `Expected '(', got ${toDebugToken(this._peekToken)}`,
+        this._peekToken.location,
+      );
     }
 
     this._nextToken();
     const condition = this._parseExpression(this._lowPrecedence);
 
     if (!this._expectPeek(TokenType.RPAREN)) {
-      throw new Error(`Expected ')', got ${toDebugToken(this._peekToken)}`);
+      throw new ParseError(
+        `Expected ')', got ${toDebugToken(this._peekToken)}`,
+        this._peekToken.location,
+      );
     }
 
     return condition;
@@ -331,14 +377,18 @@ export class Parser {
     const token = this._currentToken;
 
     if (!this._expectPeek(TokenType.IDENT)) {
-      throw new Error(`Expected identifier in let statement, got ${toDebugToken(this._peekToken)}`);
+      throw new ParseError(
+        `Expected identifier in let statement, got ${toDebugToken(this._peekToken)}`,
+        this._peekToken.location,
+      );
     }
 
     const identifier = new Identifier(this._currentToken);
 
     if (!this._expectPeek(TokenType.ASSIGN)) {
-      throw new Error(
+      throw new ParseError(
         `Expected '=' after identifier in let statement, got ${toDebugToken(this._peekToken)}`,
+        this._peekToken.location,
       );
     }
 
@@ -363,16 +413,18 @@ export class Parser {
     const token = this._currentToken;
 
     if (!this._expectPeek(TokenType.IDENT)) {
-      throw new Error(
+      throw new ParseError(
         `Expected identifier in const statement, got ${toDebugToken(this._peekToken)}`,
+        this._peekToken.location,
       );
     }
 
     const identifier = new Identifier(this._currentToken);
 
     if (!this._expectPeek(TokenType.ASSIGN)) {
-      throw new Error(
+      throw new ParseError(
         `Expected '=' after identifier in const statement, got ${toDebugToken(this._peekToken)}`,
+        this._peekToken.location,
       );
     }
 
@@ -451,7 +503,7 @@ export class Parser {
   private _parseExpression(precedence: number): Expression {
     const prefix = this._getPrefix();
     if (!prefix) {
-      throw new Error(`No prefix parsing function for ${toDebugToken(this._currentToken)} found`);
+      throw new ParseError('Unexpected end of input', this._currentToken.location);
     }
 
     let leftExp = prefix;
@@ -529,7 +581,7 @@ export class Parser {
     const expr = this._parseExpression(this._lowPrecedence);
 
     if (!this._peekTokenIs(TokenType.RPAREN)) {
-      throw new Error('Closing parentheses not found');
+      throw new ParseError('Closing parentheses not found', this._peekToken.location);
     }
 
     this._nextToken();
@@ -567,7 +619,7 @@ export class Parser {
     const index = this._parseExpression(this._lowPrecedence);
 
     if (!this._expectPeek(TokenType.RBRACKET)) {
-      throw new Error('Missing closing bracket in index expression');
+      throw new ParseError('Missing closing bracket in index expression', this._peekToken.location);
     }
 
     return new IndexExpression(token, left, index);
@@ -593,10 +645,10 @@ export class Parser {
     this._nextToken();
 
     if (this._currTokenIs(TokenType.COMMA)) {
-      throw new Error(`Expected argument expression, got ','`);
+      throw new ParseError(`Expected argument expression, got ','`, this._currentToken.location);
     }
     if (this._currTokenIs(TokenType.EOF)) {
-      throw new Error("Unclosed argument list: expected ')'");
+      throw new ParseError("Unclosed argument list: expected ')'", this._currentToken.location);
     }
 
     args.push(this._parseExpression(this._lowPrecedence));
@@ -606,20 +658,23 @@ export class Parser {
       this._nextToken();
 
       if (this._currTokenIs(TokenType.RPAREN)) {
-        throw new Error(`Expected argument expression after ',', got ')'`);
+        throw new ParseError(
+          `Expected argument expression after ',', got ')'`,
+          this._currentToken.location,
+        );
       }
       if (this._currTokenIs(TokenType.EOF)) {
-        throw new Error("Unclosed argument list: expected ')'");
+        throw new ParseError("Unclosed argument list: expected ')'", this._currentToken.location);
       }
       if (this._currTokenIs(TokenType.COMMA)) {
-        throw new Error(`Expected argument expression, got ','`);
+        throw new ParseError(`Expected argument expression, got ','`, this._currentToken.location);
       }
 
       args.push(this._parseExpression(this._lowPrecedence));
     }
 
     if (!this._expectPeek(TokenType.RPAREN)) {
-      throw new Error("Unclosed argument list: expected ')'");
+      throw new ParseError("Unclosed argument list: expected ')'", this._peekToken.location);
     }
 
     return new CallExpression(token, ident, args);

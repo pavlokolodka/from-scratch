@@ -94,7 +94,7 @@ export function createBuiltins(options: BuiltInOptions): Record<string, BuiltinF
 
       if (isType(arg, RuntimeType.STRING)) {
         const parsed = parseFloat(arg.value);
-        if (isNaN(parsed)) {
+        if (Number.isNaN(parsed)) {
           throw new Error(`Could not convert string "${arg.value}" to number`);
         }
         return new NumberValue(parsed);

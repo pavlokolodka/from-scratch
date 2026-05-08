@@ -12,7 +12,11 @@ export class CallExpression implements Expression {
     public readonly args: Expression[],
   ) {}
 
-  tokenLiteral(): string {
+  get location() {
+    return this.token.location;
+  }
+
+  get tokenLiteral(): string {
     return this.token.literal;
   }
 }

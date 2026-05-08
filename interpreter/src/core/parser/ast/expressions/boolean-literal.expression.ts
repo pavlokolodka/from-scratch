@@ -10,7 +10,11 @@ export class BooleanLiteral implements Expression {
     this.value = token.literal === 'true';
   }
 
-  tokenLiteral(): string {
+  get location() {
+    return this.token.location;
+  }
+
+  get tokenLiteral(): string {
     return this.token.literal;
   }
 }

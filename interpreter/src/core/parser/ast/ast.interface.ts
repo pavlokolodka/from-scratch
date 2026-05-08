@@ -1,3 +1,4 @@
+import type { SourceLocation } from '../../errors/error.interface';
 import type { ArrayLiteral } from './expressions/array-literal.expression';
 import type { BooleanLiteral } from './expressions/boolean-literal.expression';
 import type { CallExpression } from './expressions/call.expression';
@@ -54,7 +55,8 @@ export enum NodeKind {
 
 export interface Node {
   kind: NodeKind;
-  tokenLiteral(): string;
+  tokenLiteral: string;
+  location: SourceLocation;
 }
 
 export interface Statement extends Node {}

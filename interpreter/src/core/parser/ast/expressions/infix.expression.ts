@@ -14,7 +14,11 @@ export class InfixExpression implements Expression {
     this.operator = token.literal;
   }
 
-  tokenLiteral(): string {
+  get location() {
+    return this.token.location;
+  }
+
+  get tokenLiteral(): string {
     return this.token.literal;
   }
 }

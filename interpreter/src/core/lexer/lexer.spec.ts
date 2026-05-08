@@ -47,7 +47,39 @@ describe('Lexer', () => {
     }) => {
       expect(tokens[i].type).toBe(type);
       expect(tokens[i].literal).toBe(literal);
-      expect(tokens[i].line).toBe(line);
+      expect(tokens[i].location.line).toBe(line);
+    });
+  });
+
+  describe('location tracking', () => {
+    it('should track column and offset correctly', () => {
+      const input = `let x = 5;
+  let y = 10;`;
+      const lexer = new Lexer(input);
+      const tokens = lexer.tokenize();
+
+      // let (line 1, col 1, offset 0, len 3)
+      expect(tokens[0]).toMatchObject({
+        type: TokenType.LET,
+        literal: 'let',
+        location: { line: 1, column: 1, offset: 0, length: 3 },
+      });
+
+      // x (line 1, col 5, offset 4, len 1)
+      expect(tokens[1]).toMatchObject({
+        type: TokenType.IDENT,
+        literal: 'x',
+        location: { line: 1, column: 5, offset: 4, length: 1 },
+      });
+
+      // let (line 2, col 3, offset 13, len 3)
+      // "let x = 5;\n  let"
+      // 01234567890 1 2345
+      expect(tokens[5]).toMatchObject({
+        type: TokenType.LET,
+        literal: 'let',
+        location: { line: 2, column: 3, offset: 13, length: 3 },
+      });
     });
   });
 
@@ -78,7 +110,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
 
@@ -99,7 +131,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
   });
@@ -124,7 +156,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
 
@@ -151,7 +183,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
   });
@@ -176,7 +208,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
 
@@ -203,7 +235,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
   });
@@ -223,7 +255,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
 
@@ -246,7 +278,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
   });
@@ -270,7 +302,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
 
@@ -298,7 +330,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
 
@@ -326,7 +358,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
   });
@@ -348,7 +380,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
   });
@@ -369,7 +401,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
 
@@ -389,7 +421,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
 
@@ -411,7 +443,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
 
@@ -437,7 +469,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
   });
@@ -457,7 +489,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
 
@@ -477,7 +509,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
 
@@ -504,7 +536,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
   });
@@ -529,7 +561,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
   });
@@ -548,7 +580,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
 
@@ -565,7 +597,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
 
@@ -582,7 +614,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
 
@@ -603,7 +635,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
 
@@ -621,7 +653,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
 
@@ -641,7 +673,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
 
@@ -660,7 +692,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
 
@@ -677,7 +709,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
 
@@ -711,7 +743,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
 
@@ -733,7 +765,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
 
@@ -757,7 +789,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
   });
@@ -782,7 +814,7 @@ describe('Lexer', () => {
       for (let i = 0; i < tests.length; i++) {
         expect(tokens[i].type).toBe(tests[i].type);
         expect(tokens[i].literal).toBe(tests[i].literal);
-        expect(tokens[i].line).toBe(tests[i].line);
+        expect(tokens[i].location.line).toBe(tests[i].line);
       }
     });
   });
@@ -804,7 +836,7 @@ describe('Lexer', () => {
     for (let i = 0; i < tests.length; i++) {
       expect(tokens[i].type).toBe(tests[i].type);
       expect(tokens[i].literal).toBe(tests[i].literal);
-      expect(tokens[i].line).toBe(tests[i].line);
+      expect(tokens[i].location.line).toBe(tests[i].line);
     }
   });
 });

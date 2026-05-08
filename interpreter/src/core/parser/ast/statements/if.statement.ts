@@ -13,7 +13,11 @@ export class IfStatement implements Statement {
     public readonly alternative: IfStatement | BlockStatement | null,
   ) {}
 
-  tokenLiteral(): string {
+  get location() {
+    return this.token.location;
+  }
+
+  get tokenLiteral(): string {
     return this.token.literal;
   }
 }

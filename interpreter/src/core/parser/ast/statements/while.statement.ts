@@ -12,7 +12,11 @@ export class WhileStatement implements Statement {
     public readonly body: BlockStatement,
   ) {}
 
-  tokenLiteral(): string {
+  get location() {
+    return this.token.location;
+  }
+
+  get tokenLiteral(): string {
     return this.token.literal;
   }
 }

@@ -11,7 +11,11 @@ export class IndexExpression implements Expression {
     public readonly index: Expression,
   ) {}
 
-  tokenLiteral(): string {
+  get location() {
+    return this.token.location;
+  }
+
+  get tokenLiteral(): string {
     return this.token.literal;
   }
 }

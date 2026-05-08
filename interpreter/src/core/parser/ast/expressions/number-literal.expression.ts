@@ -23,7 +23,11 @@ export class NumberLiteral implements Expression {
     this.value = Number(token.literal);
   }
 
-  tokenLiteral(): string {
+  get location() {
+    return this.token.location;
+  }
+
+  get tokenLiteral(): string {
     return this.token.literal;
   }
 }
