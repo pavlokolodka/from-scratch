@@ -1,11 +1,13 @@
+import type { BuiltInOptions } from './builtins';
 import type { RuntimeValue } from './interpreter.interface';
 import { NodeKind } from '../parser/ast';
-import { builtins } from './builtins';
+import { createBuiltins } from './builtins';
 import { IdentifierValue, IdentifierValueMeta } from './values/identifier.value';
 
 export class Environment {
-  static createGlobal(): Environment {
+  static createGlobal(options: BuiltInOptions = {}): Environment {
     const env = new Environment();
+    const builtins = createBuiltins(options);
     for (const [name, value] of Object.entries(builtins)) {
       env.declare(new IdentifierValue(name, NodeKind.CONST_STATEMENT), value);
     }

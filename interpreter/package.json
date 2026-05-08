@@ -6,7 +6,8 @@
     "test": "jest",
     "typecheck": "tsc --noEmit",
     "build": "swc src -d dist",
-    "repl": "node --watch --require @swc-node/register src/repl/repl.ts"
+    "start": "node --require @swc-node/register src/cli/main.ts",
+    "repl": "node --require @swc-node/register src/cli/main.ts"
   },
   "keywords": [],
   "author": "Pavlo Kolodka",

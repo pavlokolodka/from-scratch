@@ -27,7 +27,7 @@ import {
   WhileStatement,
 } from './ast';
 import { BreakStatement } from './ast/statements/break.statement';
-import { __DEV__, toDebugToken } from './debug';
+import { toDebugToken } from './debug';
 import assert from 'node:assert';
 
 export class Parser {

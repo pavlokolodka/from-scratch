@@ -14,6 +14,7 @@ import type {
   LetStatement,
   Node,
   PrefixExpression,
+  Program,
   ReturnStatement,
   WhileStatement,
 } from '../parser/ast';
@@ -39,6 +40,7 @@ export class Interpreter {
   private _loopDepth = 0;
 
   eval(ast: Node, env: Environment): RuntimeValue {
+    if (isNode(ast, NodeKind.PROGRAM)) return this._evalProgram(ast, env);
     if (isNode(ast, NodeKind.NUMBER_LITERAL)) return new NumberValue(ast.value);
     if (isNode(ast, NodeKind.STRING_LITERAL)) return new StringValue(ast.value);
     if (isNode(ast, NodeKind.BOOLEAN_LITERAL)) return new BooleanValue(ast.value);
@@ -316,5 +318,25 @@ export class Interpreter {
     if (isType(val, RuntimeType.NUMBER)) return val.value !== 0;
     if (isType(val, RuntimeType.ARRAY)) return val.value.length > 0;
     return true;
+  }
+
+  private _evalProgram(program: Program, env: Environment): RuntimeValue {
+    let lastEvaluated: RuntimeValue = VoidValue;
+
+    for (const statement of program.statements) {
+      const result = this.eval(statement, env);
+
+      if (isType(result, RuntimeType.RETURN)) {
+        return result.value;
+      }
+
+      if (isType(result, RuntimeType.BREAK)) {
+        return result.value;
+      }
+
+      lastEvaluated = result;
+    }
+
+    return lastEvaluated;
   }
 }
