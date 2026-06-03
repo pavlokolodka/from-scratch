@@ -280,7 +280,12 @@ export class Interpreter {
     const right = this.eval(exp.right, env);
 
     if (left.type === RuntimeType.NUMBER && right.type === RuntimeType.NUMBER) {
-      return this._evalNumber(left.value, right.value, exp.operator as NumberOperator);
+      return this._evalNumber(
+        left.value,
+        right.value,
+        exp.operator as NumberOperator,
+        exp.location,
+      );
     }
 
     if (exp.operator === NumberOperator.EQ) {
@@ -297,7 +302,12 @@ export class Interpreter {
     );
   }
 
-  private _evalNumber(left: number, right: number, operator: NumberOperator): RuntimeValue {
+  private _evalNumber(
+    left: number,
+    right: number,
+    operator: NumberOperator,
+    location: any,
+  ): RuntimeValue {
     switch (operator) {
       case NumberOperator.MINUS:
         return new NumberValue(left - right);
@@ -306,6 +316,9 @@ export class Interpreter {
       case NumberOperator.MULTIPLY:
         return new NumberValue(left * right);
       case NumberOperator.DIVIDE:
+        if (right === 0) {
+          throw new RuntimeError('division by zero', location);
+        }
         return new NumberValue(left / right);
       case NumberOperator.LT:
         return new BooleanValue(left < right);
