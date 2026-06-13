@@ -819,6 +819,92 @@ describe('Lexer', () => {
     });
   });
 
+  describe('comments', () => {
+    it('should skip comment above a line', () => {
+      const input = `// comment\nlet x = 5;`;
+      const tests = [
+        { type: TokenType.LET, literal: 'let', line: 2 },
+        { type: TokenType.IDENT, literal: 'x', line: 2 },
+        { type: TokenType.ASSIGN, literal: '=', line: 2 },
+        { type: TokenType.NUMBER, literal: '5', line: 2 },
+        { type: TokenType.SEMICOLON, literal: ';', line: 2 },
+        { type: TokenType.EOF, literal: '', line: 2 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].location.line).toBe(tests[i].line);
+      }
+    });
+
+    it('should skip comment after a line', () => {
+      const input = `let x = 5; // comment`;
+      const tests = [
+        { type: TokenType.LET, literal: 'let', line: 1 },
+        { type: TokenType.IDENT, literal: 'x', line: 1 },
+        { type: TokenType.ASSIGN, literal: '=', line: 1 },
+        { type: TokenType.NUMBER, literal: '5', line: 1 },
+        { type: TokenType.SEMICOLON, literal: ';', line: 1 },
+        { type: TokenType.EOF, literal: '', line: 1 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+
+      expect(tokens.length).toBe(tests.length);
+
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].location.line).toBe(tests[i].line);
+      }
+    });
+
+    it('should skip both comment above and after a line', () => {
+      const input = `// above\nlet x = 5; // after`;
+      const tests = [
+        { type: TokenType.LET, literal: 'let', line: 2 },
+        { type: TokenType.IDENT, literal: 'x', line: 2 },
+        { type: TokenType.ASSIGN, literal: '=', line: 2 },
+        { type: TokenType.NUMBER, literal: '5', line: 2 },
+        { type: TokenType.SEMICOLON, literal: ';', line: 2 },
+        { type: TokenType.EOF, literal: '', line: 2 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].location.line).toBe(tests[i].line);
+      }
+    });
+
+    it('should handle whitespace after a comment line', () => {
+      const input = `// comment\n  let x = 5;`;
+      const tests = [
+        { type: TokenType.LET, literal: 'let', line: 2 },
+        { type: TokenType.IDENT, literal: 'x', line: 2 },
+        { type: TokenType.ASSIGN, literal: '=', line: 2 },
+        { type: TokenType.NUMBER, literal: '5', line: 2 },
+        { type: TokenType.SEMICOLON, literal: ';', line: 2 },
+        { type: TokenType.EOF, literal: '', line: 2 },
+      ];
+
+      const tokens = new Lexer(input).tokenize();
+      expect(tokens.length).toBe(tests.length);
+      for (let i = 0; i < tests.length; i++) {
+        expect(tokens[i].type).toBe(tests[i].type);
+        expect(tokens[i].literal).toBe(tests[i].literal);
+        expect(tokens[i].location.line).toBe(tests[i].line);
+      }
+    });
+  });
+
   it('should tokenize illegal tokens', () => {
     const input = `@ # $`;
     const tests = [

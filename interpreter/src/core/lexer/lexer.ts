@@ -48,7 +48,7 @@ export class Lexer {
   }
 
   private _tokenize(): Token {
-    this._skipWhitespace();
+    this._skipToNextToken();
 
     const startLine = this._line;
     const startColumn = this._column;
@@ -276,13 +276,24 @@ export class Lexer {
     return this._input.slice(position, this._position);
   }
 
-  private _skipWhitespace() {
-    while (
-      this._char === ' ' ||
-      this._char === '\t' ||
-      this._char === '\n' ||
-      this._char === '\r'
-    ) {
+  private _skipToNextToken() {
+    while (true) {
+      if (this._char === ' ' || this._char === '\t' || this._char === '\n' || this._char === '\r') {
+        this._readChar();
+      } else if (this._char === '/' && this._peekChar() === '/') {
+        this._nextLine();
+      } else {
+        break;
+      }
+    }
+  }
+
+  private _nextLine() {
+    while (this._char !== '\n' && this._char !== '') {
+      this._readChar();
+    }
+
+    if (this._char === '\n') {
       this._readChar();
     }
   }
