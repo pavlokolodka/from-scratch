@@ -93,7 +93,7 @@ describe('Built-ins', () => {
     });
 
     it('should throw for unsupported type', () => {
-      expect(() => evaluate('len(5)')).toThrow('Argument to len() not supported, got NUMBER');
+      expect(() => evaluate('len(5)')).toThrow('len() not supported for type number');
     });
 
     it('should throw for incorrect number of arguments', () => {
@@ -121,13 +121,13 @@ describe('Built-ins', () => {
 
   describe('type', () => {
     it.each([
-      { input: 'type(5)', expected: 'NUMBER' },
-      { input: 'type("hi")', expected: 'STRING' },
-      { input: 'type(true)', expected: 'BOOLEAN' },
-      { input: 'type(nil)', expected: 'NULL' },
-      { input: 'type([])', expected: 'ARRAY' },
-      { input: 'fn f() {}; type(f)', expected: 'FUNCTION' },
-      { input: 'type(print)', expected: 'BUILTIN_FN' },
+      { input: 'type(5)', expected: 'number' },
+      { input: 'type("hi")', expected: 'string' },
+      { input: 'type(true)', expected: 'boolean' },
+      { input: 'type(nil)', expected: 'nil' },
+      { input: 'type([])', expected: 'array' },
+      { input: 'fn f() {}; type(f)', expected: 'function' },
+      { input: 'type(print)', expected: 'builtin function' },
     ])('should return type of $input as $expected', ({ input, expected }) => {
       const result = evaluate(input);
       expect(result).toEqual({ type: RuntimeType.STRING, value: expected });
@@ -183,7 +183,7 @@ describe('Built-ins', () => {
     });
 
     it('should throw for unsupported type', () => {
-      expect(() => evaluate('push(5, 1)')).toThrow('push() not supported for type NUMBER');
+      expect(() => evaluate('push(5, 1)')).toThrow('push() not supported for type number');
     });
 
     it('should throw for incorrect number of arguments', () => {
@@ -208,7 +208,7 @@ describe('Built-ins', () => {
     });
 
     it('should throw for unsupported type', () => {
-      expect(() => evaluate('num([])')).toThrow('num() not supported for type ARRAY');
+      expect(() => evaluate('num([])')).toThrow('num() not supported for type array');
     });
 
     it('should throw for incorrect number of arguments', () => {

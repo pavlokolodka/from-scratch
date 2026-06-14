@@ -115,7 +115,7 @@ describe('Interpreter', () => {
         });
 
         it('should throw for non-number type', () => {
-          expect(() => evaluate('-"a"')).toThrow("Operator '-' not supported for type STRING");
+          expect(() => evaluate('-"a"')).toThrow("Operator '-' not supported for type string");
         });
       });
     });
@@ -323,13 +323,13 @@ describe('Interpreter', () => {
 
       it('should throw for non-number index', () => {
         expect(() => evaluateAll('let arr = [1, 2]; arr["a"]')).toThrow(
-          'Index must be a number, got STRING',
+          'Index must be a number, got string',
         );
       });
 
       it('should throw when indexing a non-array value', () => {
         expect(() => evaluateAll('let x = 5; x[0]')).toThrow(
-          'Index operator not supported for type NUMBER',
+          'Index operator not supported for type number',
         );
       });
     });
@@ -412,16 +412,16 @@ describe('Interpreter', () => {
       });
 
       it.each([
-        { desc: 'number', input: 'let x = 5; x[0] = 99', type: 'NUMBER' },
-        { desc: 'string', input: 'let x = "hi"; x[0] = 99', type: 'STRING' },
-        { desc: 'boolean', input: 'let x = true; x[0] = 99', type: 'BOOLEAN' },
+        { desc: 'number', input: 'let x = 5; x[0] = 99', type: 'number' },
+        { desc: 'string', input: 'let x = "hi"; x[0] = 99', type: 'string' },
+        { desc: 'boolean', input: 'let x = true; x[0] = 99', type: 'boolean' },
       ])('should throw when mutating a non-array ($desc)', ({ input, type }) => {
         expect(() => evaluateAll(input)).toThrow(`Index operator not supported for type ${type}`);
       });
 
       it('should throw for non-number index', () => {
         expect(() => evaluateAll('let arr = [1, 2]; arr["a"] = 99')).toThrow(
-          'Index must be a number, got STRING',
+          'Index must be a number, got string',
         );
       });
     });
@@ -1012,12 +1012,12 @@ describe('Interpreter', () => {
       });
 
       it('should throw error when stop is used outside of a loop', () => {
-        expect(() => evaluate('stop')).toThrow('stop outside of loop');
+        expect(() => evaluate('stop')).toThrow('Stop outside of loop');
       });
 
       it('should throw error when stop is used in a function but outside of a loop', () => {
         const input = 'fn f() { stop }; f()';
-        expect(() => evaluateAll(input)).toThrow('stop outside of loop');
+        expect(() => evaluateAll(input)).toThrow('Stop outside of loop');
       });
 
       it('should work correctly with return inside a loop', () => {

@@ -23,7 +23,7 @@ import { RuntimeError } from '../errors';
 import { isNode, NodeKind, NumberOperator, PrefixOperator } from '../parser/ast';
 import { Environment } from './environment';
 import { RuntimeType } from './interpreter.interface';
-import { isType } from './is-type';
+import { isType, typeToString } from './runtime-type';
 import { ArrayValue } from './values/array.value';
 import { BooleanValue } from './values/boolean.value';
 import { BreakValue } from './values/break.value';
@@ -81,7 +81,7 @@ export class Interpreter {
       case PrefixOperator.MINUS:
         if (!isType(right, RuntimeType.NUMBER)) {
           throw new RuntimeError(
-            `Operator '-' not supported for type ${right.type}`,
+            `Operator '-' not supported for type ${typeToString(right.type)}`,
             node.location,
           );
         }
@@ -100,11 +100,17 @@ export class Interpreter {
     const index = this.eval(node.index, env);
 
     if (array.type !== RuntimeType.ARRAY) {
-      throw new RuntimeError(`Index operator not supported for type ${array.type}`, node.location);
+      throw new RuntimeError(
+        `Index operator not supported for type ${typeToString(array.type)}`,
+        node.location,
+      );
     }
 
     if (index.type !== RuntimeType.NUMBER) {
-      throw new RuntimeError(`Index must be a number, got ${index.type}`, node.location);
+      throw new RuntimeError(
+        `Index must be a number, got ${typeToString(index.type)}`,
+        node.location,
+      );
     }
 
     const elements = (array as ArrayValue).value;
@@ -119,14 +125,14 @@ export class Interpreter {
 
   private _evalBreakStmt(stmt: BreakStatement, _env: Environment): BreakValue {
     if (this._loopDepth === 0) {
-      throw new RuntimeError('stop outside of loop', stmt.location);
+      throw new RuntimeError('Stop outside of loop', stmt.location);
     }
     return new BreakValue(VoidValue);
   }
 
   private _evalReturnStmt(stmt: ReturnStatement, env: Environment): ReturnValue {
     if (this._callDepth === 0) {
-      throw new RuntimeError('return outside of function', stmt.location);
+      throw new RuntimeError('Return outside of function', stmt.location);
     }
     return new ReturnValue(this.eval(stmt.value, env));
   }
@@ -227,7 +233,7 @@ export class Interpreter {
 
     env.declare(identifier, value, stmt.location);
 
-    return value;
+    return VoidValue;
   }
 
   private _evalIndexAssignStmt(stmt: IndexAssignStatement, env: Environment): RuntimeValue {
@@ -236,11 +242,17 @@ export class Interpreter {
     const value = this.eval(stmt.right, env);
 
     if (array.type !== RuntimeType.ARRAY) {
-      throw new RuntimeError(`Index operator not supported for type ${array.type}`, stmt.location);
+      throw new RuntimeError(
+        `Index operator not supported for type ${typeToString(array.type)}`,
+        stmt.location,
+      );
     }
 
     if (index.type !== RuntimeType.NUMBER) {
-      throw new RuntimeError(`Index must be a number, got ${index.type}`, stmt.location);
+      throw new RuntimeError(
+        `Index must be a number, got ${typeToString(index.type)}`,
+        stmt.location,
+      );
     }
 
     const elements = (array as ArrayValue).value;
@@ -262,7 +274,7 @@ export class Interpreter {
     const meta = env.checkMeta(identifier, stmt.location);
 
     if (meta && meta.kind === NodeKind.CONST_STATEMENT) {
-      throw new RuntimeError(`assignment to constant variable`, stmt.location);
+      throw new RuntimeError(`Assignment to constant variable`, stmt.location);
     }
 
     env.assign(identifier, value, stmt.location);
@@ -297,7 +309,7 @@ export class Interpreter {
     }
 
     throw new RuntimeError(
-      `Unexpected infix operands left: ${JSON.stringify(left)}, right: ${JSON.stringify(right)}`,
+      `Operator '${exp.operator}' cannot be applied to ${typeToString(left.type)} and ${typeToString(right.type)}`,
       exp.location,
     );
   }
@@ -317,7 +329,7 @@ export class Interpreter {
         return new NumberValue(left * right);
       case NumberOperator.DIVIDE:
         if (right === 0) {
-          throw new RuntimeError('division by zero', location);
+          throw new RuntimeError('Division by zero', location);
         }
         return new NumberValue(left / right);
       case NumberOperator.LT:
