@@ -142,7 +142,7 @@ export class Interpreter {
 
     if (isType(func, RuntimeType.BUILTIN_FN)) {
       const args = expr.args.map((arg) => this.eval(arg, env));
-      return func.fn(args);
+      return func.fn(args, expr.location);
     }
 
     if (!isType(func, RuntimeType.FUNCTION)) {

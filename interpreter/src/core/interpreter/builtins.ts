@@ -1,4 +1,5 @@
 import type { RuntimeValue } from './interpreter.interface';
+import { RuntimeError } from '../errors';
 import { RuntimeType } from './interpreter.interface';
 import { isType, typeToString } from './runtime-type';
 import { BuiltinFnValue } from './values/builtin-fn.value';
@@ -31,9 +32,9 @@ export function createBuiltins(options: BuiltInOptions): Record<string, BuiltinF
       opt.onPrint(...args.map(stringifyOutput));
       return VoidValue;
     }),
-    len: new BuiltinFnValue((args) => {
+    len: new BuiltinFnValue((args, location) => {
       if (args.length !== 1) {
-        throw new Error(`Expected 1 argument for len(), got ${args.length}`);
+        throw new RuntimeError(`Expected 1 argument for len(), got ${args.length}`, location);
       }
 
       const arg = args[0];
@@ -46,25 +47,25 @@ export function createBuiltins(options: BuiltInOptions): Record<string, BuiltinF
         return new NumberValue(arg.value.length);
       }
 
-      throw new Error(`len() not supported for type ${typeToString(arg.type)}`);
+      throw new RuntimeError(`len() not supported for type ${typeToString(arg.type)}`, location);
     }),
-    str: new BuiltinFnValue((args) => {
+    str: new BuiltinFnValue((args, location) => {
       if (args.length !== 1) {
-        throw new Error(`Expected 1 argument for str(), got ${args.length}`);
+        throw new RuntimeError(`Expected 1 argument for str(), got ${args.length}`, location);
       }
 
       return new StringValue(stringifyOutput(args[0]));
     }),
-    type: new BuiltinFnValue((args) => {
+    type: new BuiltinFnValue((args, location) => {
       if (args.length !== 1) {
-        throw new Error(`Expected 1 argument for type(), got ${args.length}`);
+        throw new RuntimeError(`Expected 1 argument for type(), got ${args.length}`, location);
       }
 
       return new StringValue(typeToString(args[0].type));
     }),
-    push: new BuiltinFnValue((args) => {
+    push: new BuiltinFnValue((args, location) => {
       if (args.length !== 2) {
-        throw new Error(`Expected 2 arguments for push(), got ${args.length}`);
+        throw new RuntimeError(`Expected 2 arguments for push(), got ${args.length}`, location);
       }
 
       const [target, val] = args;
@@ -79,11 +80,14 @@ export function createBuiltins(options: BuiltInOptions): Record<string, BuiltinF
         return new NumberValue(target.value.length);
       }
 
-      throw new Error(`push() not supported for type ${typeToString(target.type)}`);
+      throw new RuntimeError(
+        `push() not supported for type ${typeToString(target.type)}`,
+        location,
+      );
     }),
-    num: new BuiltinFnValue((args) => {
+    num: new BuiltinFnValue((args, location) => {
       if (args.length !== 1) {
-        throw new Error(`Expected 1 argument for num(), got ${args.length}`);
+        throw new RuntimeError(`Expected 1 argument for num(), got ${args.length}`, location);
       }
 
       const arg = args[0];
@@ -95,7 +99,7 @@ export function createBuiltins(options: BuiltInOptions): Record<string, BuiltinF
       if (isType(arg, RuntimeType.STRING)) {
         const parsed = parseFloat(arg.value);
         if (Number.isNaN(parsed)) {
-          throw new Error(`Could not convert string "${arg.value}" to number`);
+          throw new RuntimeError(`Could not convert string "${arg.value}" to number`, location);
         }
         return new NumberValue(parsed);
       }
@@ -104,7 +108,7 @@ export function createBuiltins(options: BuiltInOptions): Record<string, BuiltinF
         return new NumberValue(arg.value ? 1 : 0);
       }
 
-      throw new Error(`num() not supported for type ${typeToString(arg.type)}`);
+      throw new RuntimeError(`num() not supported for type ${typeToString(arg.type)}`, location);
     }),
   };
 }
