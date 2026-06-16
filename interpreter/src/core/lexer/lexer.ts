@@ -246,6 +246,14 @@ export class Lexer {
     while (this._isDigit(this._char)) {
       this._readChar();
     }
+
+    if (this._char === '.' && this._isDigit(this._peekChar())) {
+      this._readChar();
+      while (this._isDigit(this._char)) {
+        this._readChar();
+      }
+    }
+
     return this._input.slice(position, this._position);
   }
 
