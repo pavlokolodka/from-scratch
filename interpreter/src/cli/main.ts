@@ -1,4 +1,5 @@
 import { ErrorReporter, InterpreterError } from '../core/errors';
+import { toDebugAST } from '../core/parser/debug';
 import { Runner } from '../core/runner';
 import { startRepl } from './repl';
 import * as fs from 'node:fs';
@@ -11,7 +12,14 @@ function main() {
     return;
   }
 
-  const filePath = args[0];
+  const showAST = args.includes('--show-ast');
+  const filePath = args.find((arg) => !arg.startsWith('--'));
+
+  if (!filePath) {
+    console.error('Error: No file path provided.');
+    process.exit(1);
+  }
+
   if (!fs.existsSync(filePath)) {
     console.error(`Error: File not found: ${filePath}`);
     process.exit(1);
@@ -21,6 +29,12 @@ function main() {
   const runner = new Runner();
 
   try {
+    if (showAST) {
+      const program = runner.parse(code);
+      console.log(toDebugAST(program));
+      return;
+    }
+
     runner.run(code);
   } catch (error) {
     if (error instanceof InterpreterError) {

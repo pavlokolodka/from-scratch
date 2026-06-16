@@ -19,9 +19,13 @@ export class Runner {
   }
 
   run(input: string): RuntimeValue {
+    const program = this.parse(input);
+    return this._interpreter.eval(program, this._env);
+  }
+
+  parse(input: string) {
     const lexer = new Lexer(input);
     const parser = new Parser(lexer.tokenize());
-    const program = parser.parse();
-    return this._interpreter.eval(program, this._env);
+    return parser.parse();
   }
 }
