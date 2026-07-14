@@ -1,0 +1,763 @@
+import type { Token } from '../lexer/lexer.interface';
+import type { Expression, Statement } from './ast';
+import { ParseError } from '../errors';
+import { TokenType } from '../lexer/lexer.interface';
+import {
+  ArrayLiteral,
+  AssignStatement,
+  BlockStatement,
+  BooleanLiteral,
+  CallExpression,
+  ConstStatement,
+  ExpressionStatement,
+  FunctionDeclaration,
+  Identifier,
+  IfStatement,
+  IndexAssignStatement,
+  IndexExpression,
+  InfixExpression,
+  isNode,
+  LetStatement,
+  NodeKind,
+  NullLiteral,
+  NumberLiteral,
+  PrefixExpression,
+  Program,
+  ReturnStatement,
+  StringLiteral,
+  WhileStatement,
+} from './ast';
+import { BreakStatement } from './ast/statements/break.statement';
+import { toDebugToken } from './debug';
+import assert from 'node:assert';
+
+export class Parser {
+  private _tokens: Token[] = [];
+
+  private _pos = 0;
+
+  private _currentToken!: Token;
+
+  private _peekToken!: Token;
+
+  private _lowPrecedence = 0;
+
+  constructor(tokens: Token[]) {
+    this._tokens = tokens;
+    this._nextToken();
+    this._nextToken();
+  }
+
+  private _nextToken() {
+    this._currentToken = this._peekToken;
+    this._peekToken = this._tokens[this._pos] || {
+      type: TokenType.EOF,
+      literal: '',
+      location: {
+        line: this._currentToken?.location.line || 1,
+        column:
+          (this._currentToken?.location.column || 0) + (this._currentToken?.literal.length || 0),
+        offset:
+          (this._currentToken?.location.offset || 0) + (this._currentToken?.literal.length || 0),
+        length: 0,
+      },
+    };
+    if (this._pos < this._tokens.length) {
+      this._pos++;
+    }
+  }
+
+  parse(): Program {
+    const program = new Program();
+
+    while (this._currentToken.type !== TokenType.EOF) {
+      const stmt = this._parseStatement();
+      if (stmt !== null) {
+        program.statements.push(stmt);
+      }
+      this._nextToken();
+    }
+
+    return program;
+  }
+
+  private _parseStatement(): Statement | null {
+    switch (this._currentToken.type) {
+      case TokenType.SEMICOLON:
+        return null;
+      case TokenType.LET:
+        return this._parseLetStatement();
+      case TokenType.CONST:
+        return this._parseConstStatement();
+      case TokenType.LBRACE:
+        return this._parseBlockStatement();
+      case TokenType.FUNCTION:
+        return this._parseFunctionStatement();
+      case TokenType.IF:
+        return this._parseIfStatement();
+      case TokenType.WHILE:
+        return this._parseWhileStatement();
+      case TokenType.RETURN:
+        return this._parseReturnStatement();
+      case TokenType.BREAK:
+        return this._parseBreakStatement();
+      case TokenType.IDENT:
+        if (this._peekTokenIs(TokenType.ASSIGN)) {
+          return this._parseAssignStatement();
+        }
+        return this._parseExpressionStatement();
+      default:
+        return this._parseExpressionStatement();
+    }
+  }
+
+  private _parseWhileStatement(): WhileStatement {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.WHILE),
+        `_parseIfStatement called with non-WHILE token: ${toDebugToken(this._currentToken)}`,
+      );
+
+    const token = this._currentToken;
+    const condition = this._parseCondition();
+
+    if (!this._expectPeek(TokenType.LBRACE)) {
+      throw new ParseError(
+        `Expected '{', got '${this._peekToken.literal}'`,
+        this._peekToken.location,
+      );
+    }
+
+    const body = this._parseBlockStatement();
+
+    return new WhileStatement(token, condition, body);
+  }
+
+  private _parseArray(): ArrayLiteral {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.LBRACKET),
+        `_parseArrayStatement called with non-Array token: ${toDebugToken(this._currentToken)}`,
+      );
+
+    const token = this._currentToken;
+
+    if (!this._expectPeekArrayToken() && !this._expectPeek(TokenType.RBRACKET)) {
+      throw new ParseError(`'[' was never closed`, this._peekToken.location);
+    }
+
+    const expression: Expression[] = [];
+
+    while (!this._currTokenIs(TokenType.RBRACKET)) {
+      expression.push(this._parseExpression(this._lowPrecedence));
+
+      if (this._expectPeek(TokenType.COMMA)) {
+        if (!this._expectPeekArrayToken()) {
+          throw new ParseError(
+            `Expected array element after ',', got '${this._peekToken.literal}'`,
+            this._peekToken.location,
+          );
+        }
+        continue;
+      }
+
+      if (!this._expectPeekArrayToken() && !this._expectPeek(TokenType.RBRACKET)) {
+        throw new ParseError(
+          `Expected ',' or ']' after array element, found '${this._peekToken.literal}'`,
+          this._peekToken.location,
+        );
+      }
+    }
+
+    return new ArrayLiteral(token, expression);
+  }
+
+  private _parseBreakStatement(): BreakStatement {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.BREAK),
+        `_parseReturnStatement called with non-BREAK token: ${toDebugToken(this._currentToken)}`,
+      );
+
+    const token = this._currentToken;
+
+    return new BreakStatement(token);
+  }
+
+  private _parseReturnStatement(): ReturnStatement {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.RETURN),
+        `_parseReturnStatement called with non-RETURN token: ${toDebugToken(this._currentToken)}`,
+      );
+
+    const token = this._currentToken;
+
+    this._nextToken();
+
+    if (this._currTokenIs(TokenType.EOF) || this._currTokenIs(TokenType.SEMICOLON)) {
+      throw new ParseError('Expected expression after return', this._currentToken.location);
+    }
+
+    const value = this._parseExpression(this._lowPrecedence);
+
+    if (this._peekTokenIs(TokenType.SEMICOLON)) {
+      this._nextToken();
+    }
+
+    return new ReturnStatement(token, value);
+  }
+
+  private _parseFunctionStatement(): FunctionDeclaration {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.FUNCTION),
+        `_parseFunctionStatement called with non-FUNCTION token: ${toDebugToken(this._currentToken)}`,
+      );
+
+    const token = this._currentToken;
+
+    if (!this._expectPeek(TokenType.IDENT)) {
+      throw new ParseError(
+        'Function declaration require a function name',
+        this._peekToken.location,
+      );
+    }
+
+    const ident = new Identifier(this._currentToken);
+
+    if (!this._expectPeek(TokenType.LPAREN)) {
+      throw new ParseError(
+        `Expected '(' after function name '${ident.tokenLiteral}', found '${this._peekToken.literal}'`,
+        this._peekToken.location,
+      );
+    }
+
+    if (!this._expectPeek(TokenType.IDENT) && !this._expectPeek(TokenType.RPAREN)) {
+      throw new ParseError(
+        `Parameter list for '${ident.tokenLiteral}' was never closed. Expected ')'`,
+        this._peekToken.location,
+      );
+    }
+
+    const parameters: Identifier[] = [];
+
+    while (!this._currTokenIs(TokenType.RPAREN)) {
+      parameters.push(new Identifier(this._currentToken));
+
+      if (this._expectPeek(TokenType.COMMA)) {
+        if (!this._expectPeek(TokenType.IDENT)) {
+          throw new ParseError(
+            `Expected parameter name after ',', got ${this._peekToken.literal}`,
+            this._peekToken.location,
+          );
+        }
+        continue;
+      }
+
+      if (!this._expectPeek(TokenType.IDENT) && !this._expectPeek(TokenType.RPAREN)) {
+        throw new ParseError(
+          `Parameter list for '${ident.tokenLiteral}' was never closed. Expected ')'`,
+          this._peekToken.location,
+        );
+      }
+    }
+
+    if (!this._expectPeek(TokenType.LBRACE)) {
+      throw new ParseError(
+        `Parameter list for '${ident.tokenLiteral}' was never closed. Expected ')'`,
+        this._peekToken.location,
+      );
+    }
+
+    const body = this._parseBlockStatement();
+
+    if (!body) {
+      throw new ParseError(`Unexpected empty body`, this._currentToken.location);
+    }
+
+    return new FunctionDeclaration(token, ident, parameters, body);
+  }
+
+  private _parseBlockStatement(): BlockStatement {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.LBRACE),
+        `_parseBlockStatement called with non-LBRACE token: ${toDebugToken(this._currentToken)}`,
+      );
+
+    const token = this._currentToken;
+    const statements: Statement[] = [];
+
+    while (!this._peekTokenIs(TokenType.RBRACE) && !this._peekTokenIs(TokenType.EOF)) {
+      this._nextToken();
+
+      const stm = this._parseStatement();
+      if (stm !== null) {
+        statements.push(stm);
+      }
+    }
+
+    if (!this._expectPeek(TokenType.RBRACE)) {
+      throw new ParseError(
+        `Expected '}', got ${toDebugToken(this._peekToken)}`,
+        this._peekToken.location,
+      );
+    }
+
+    return new BlockStatement(token, statements);
+  }
+
+  private _parseIfStatement(): IfStatement {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.IF) || this._currTokenIs(TokenType.ELIF),
+        `_parseIfStatement called with non-IF/ELIF token: ${toDebugToken(this._currentToken)}`,
+      );
+
+    const token = this._currentToken;
+    const condition = this._parseCondition();
+
+    if (!this._expectPeek(TokenType.LBRACE)) {
+      throw new ParseError(
+        `Expected '{', got ${toDebugToken(this._peekToken)}`,
+        this._peekToken.location,
+      );
+    }
+
+    const body = this._parseBlockStatement();
+
+    let alternative: IfStatement | BlockStatement | null = null;
+
+    if (this._peekTokenIs(TokenType.ELIF)) {
+      this._nextToken();
+      alternative = this._parseIfStatement();
+    } else if (this._peekTokenIs(TokenType.ELSE)) {
+      this._nextToken();
+      if (!this._expectPeek(TokenType.LBRACE)) {
+        throw new ParseError(
+          `Expected '{', got ${toDebugToken(this._peekToken)}`,
+          this._peekToken.location,
+        );
+      }
+      alternative = this._parseBlockStatement();
+    }
+
+    return new IfStatement(token, condition, body, alternative);
+  }
+
+  private _parseCondition(): Expression {
+    if (!this._expectPeek(TokenType.LPAREN)) {
+      throw new ParseError(
+        `Expected '(', got ${toDebugToken(this._peekToken)}`,
+        this._peekToken.location,
+      );
+    }
+
+    this._nextToken();
+    const condition = this._parseExpression(this._lowPrecedence);
+
+    if (!this._expectPeek(TokenType.RPAREN)) {
+      throw new ParseError(
+        `Expected ')', got ${toDebugToken(this._peekToken)}`,
+        this._peekToken.location,
+      );
+    }
+
+    return condition;
+  }
+
+  private _parseLetStatement(): LetStatement {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.LET),
+        `_parseLetStatement called with non-LET token: ${toDebugToken(this._currentToken)}`,
+      );
+
+    const token = this._currentToken;
+
+    if (!this._expectPeek(TokenType.IDENT)) {
+      throw new ParseError(
+        `Expected identifier in let statement, got ${toDebugToken(this._peekToken)}`,
+        this._peekToken.location,
+      );
+    }
+
+    const identifier = new Identifier(this._currentToken);
+
+    if (!this._expectPeek(TokenType.ASSIGN)) {
+      throw new ParseError(
+        `Expected '=' after identifier in let statement, got ${toDebugToken(this._peekToken)}`,
+        this._peekToken.location,
+      );
+    }
+
+    this._nextToken();
+
+    const value = this._parseExpression(this._lowPrecedence);
+
+    if (this._peekTokenIs(TokenType.SEMICOLON)) {
+      this._nextToken();
+    }
+
+    return new LetStatement(token, identifier, value);
+  }
+
+  private _parseConstStatement(): ConstStatement {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.CONST),
+        `_parseConstStatement called with non-CONST token: ${toDebugToken(this._currentToken)}`,
+      );
+
+    const token = this._currentToken;
+
+    if (!this._expectPeek(TokenType.IDENT)) {
+      throw new ParseError(
+        `Expected identifier in const statement, got ${toDebugToken(this._peekToken)}`,
+        this._peekToken.location,
+      );
+    }
+
+    const identifier = new Identifier(this._currentToken);
+
+    if (!this._expectPeek(TokenType.ASSIGN)) {
+      throw new ParseError(
+        `Expected '=' after identifier in const statement, got ${toDebugToken(this._peekToken)}`,
+        this._peekToken.location,
+      );
+    }
+
+    this._nextToken();
+
+    const value = this._parseExpression(this._lowPrecedence);
+
+    if (this._peekTokenIs(TokenType.SEMICOLON)) {
+      this._nextToken();
+    }
+
+    return new ConstStatement(token, identifier, value);
+  }
+
+  private _parseExpressionStatement(): Statement {
+    const token = this._currentToken;
+    const expression = this._parseExpression(this._lowPrecedence);
+
+    if (isNode(expression, NodeKind.INDEX_EXPRESSION) && this._peekTokenIs(TokenType.ASSIGN)) {
+      return this._parseIndexAssignStatement(token, expression);
+    }
+
+    if (this._peekTokenIs(TokenType.SEMICOLON)) {
+      this._nextToken();
+    }
+
+    return new ExpressionStatement(token, expression);
+  }
+
+  private _parseIndexAssignStatement(t: Token, expression: IndexExpression): IndexAssignStatement {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.RBRACKET),
+        `_parseIndexAssignStatement called with non-RBRACKET token: ${toDebugToken(this._currentToken)}`,
+      );
+
+    this._nextToken();
+    this._nextToken();
+
+    const value = this._parseExpression(this._lowPrecedence);
+
+    if (this._peekTokenIs(TokenType.SEMICOLON)) {
+      this._nextToken();
+    }
+
+    return new IndexAssignStatement(t, expression, value);
+  }
+
+  private _parseAssignStatement(): AssignStatement {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.IDENT),
+        `_parseAssignStatement called with non-IDENT token: ${toDebugToken(this._currentToken)}`,
+      );
+    __DEV__ &&
+      assert.ok(
+        this._peekTokenIs(TokenType.ASSIGN),
+        `_parseAssignStatement called without ASSIGN peek token: ${toDebugToken(this._peekToken)}`,
+      );
+
+    const token = this._currentToken;
+    const identifier = new Identifier(this._currentToken);
+
+    this._nextToken();
+    this._nextToken();
+
+    const value = this._parseExpression(this._lowPrecedence);
+
+    if (this._peekTokenIs(TokenType.SEMICOLON)) {
+      this._nextToken();
+    }
+
+    return new AssignStatement(token, identifier, value);
+  }
+
+  private _parseExpression(precedence: number): Expression {
+    const prefix = this._getPrefix();
+    if (!prefix) {
+      throw new ParseError('Unexpected end of input', this._currentToken.location);
+    }
+
+    let leftExp = prefix;
+
+    while (
+      !this._peekTokenIs(TokenType.SEMICOLON) &&
+      precedence < this._getPrecedence(this._peekToken)
+    ) {
+      this._nextToken();
+
+      const infix = this._getInfix(leftExp);
+      if (!infix) {
+        return leftExp;
+      }
+
+      leftExp = infix;
+    }
+
+    return leftExp;
+  }
+
+  private _getPrefix(): Expression | null {
+    switch (this._currentToken.type) {
+      case TokenType.IDENT:
+        return new Identifier(this._currentToken);
+      case TokenType.NUMBER:
+        return new NumberLiteral(this._currentToken);
+      case TokenType.STRING:
+        return new StringLiteral(this._currentToken);
+      case TokenType.TRUE:
+      case TokenType.FALSE:
+        return new BooleanLiteral(this._currentToken);
+      case TokenType.NULL:
+        return new NullLiteral(this._currentToken);
+      case TokenType.LPAREN:
+        return this._parseLParen();
+      case TokenType.LBRACKET:
+        return this._parseArray();
+      case TokenType.MINUS:
+      case TokenType.BANG:
+      case TokenType.DOUBLE_BANG:
+        return this._parsePrefixExpression();
+      default:
+        return null;
+    }
+  }
+
+  private _parsePrefixExpression(): PrefixExpression {
+    __DEV__ &&
+      assert.ok(
+        [TokenType.MINUS, TokenType.BANG, TokenType.DOUBLE_BANG].includes(
+          this._currentToken.type as TokenType,
+        ),
+        `_parsePrefixExpression called with non-operator token: ${toDebugToken(this._currentToken)}`,
+      );
+
+    const token = this._currentToken;
+
+    this._nextToken();
+
+    const right = this._parseExpression(this._lowPrecedence);
+
+    return new PrefixExpression(token, right);
+  }
+
+  private _parseLParen(): Expression {
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.LPAREN),
+        `_parseLParen called with non-LPAREN token: ${toDebugToken(this._currentToken)}`,
+      );
+
+    this._nextToken();
+
+    const expr = this._parseExpression(this._lowPrecedence);
+
+    if (!this._peekTokenIs(TokenType.RPAREN)) {
+      throw new ParseError('Closing parentheses not found', this._peekToken.location);
+    }
+
+    this._nextToken();
+
+    return expr;
+  }
+
+  private _getInfix(left: Expression): Expression | null {
+    switch (this._currentToken.type) {
+      case TokenType.PLUS:
+      case TokenType.MINUS:
+      case TokenType.MULTIPLY:
+      case TokenType.DIVIDE:
+      case TokenType.LT:
+      case TokenType.GT:
+      case TokenType.LTE:
+      case TokenType.GTE:
+      case TokenType.EQ:
+      case TokenType.NEQ:
+        return this._parseInfixExpression(left);
+      case TokenType.LPAREN:
+        return this._parseCallExpression(left);
+      case TokenType.LBRACKET:
+        return this._parseIndexExpression(left);
+      default:
+        return null;
+    }
+  }
+
+  private _parseIndexExpression(left: Expression): IndexExpression {
+    const token = this._currentToken;
+
+    this._nextToken();
+
+    const index = this._parseExpression(this._lowPrecedence);
+
+    if (!this._expectPeek(TokenType.RBRACKET)) {
+      throw new ParseError('Missing closing bracket in index expression', this._peekToken.location);
+    }
+
+    return new IndexExpression(token, left, index);
+  }
+
+  private _parseCallExpression(left: Expression): CallExpression {
+    __DEV__ &&
+      assert.ok(isNode(left, NodeKind.IDENTIFIER), `Expected function name, got ${left.kind}`);
+    __DEV__ &&
+      assert.ok(
+        this._currTokenIs(TokenType.LPAREN),
+        `_parseCallExpression called with non-LPAREN token: ${toDebugToken(this._currentToken)}`,
+      );
+
+    const token = this._currentToken;
+    const ident = left as Identifier;
+    const args: Expression[] = [];
+
+    if (this._expectPeek(TokenType.RPAREN)) {
+      return new CallExpression(token, ident, args);
+    }
+
+    this._nextToken();
+
+    if (this._currTokenIs(TokenType.COMMA)) {
+      throw new ParseError(`Expected argument expression, got ','`, this._currentToken.location);
+    }
+    if (this._currTokenIs(TokenType.EOF)) {
+      throw new ParseError("Unclosed argument list: expected ')'", this._currentToken.location);
+    }
+
+    args.push(this._parseExpression(this._lowPrecedence));
+
+    while (this._peekTokenIs(TokenType.COMMA)) {
+      this._nextToken();
+      this._nextToken();
+
+      if (this._currTokenIs(TokenType.RPAREN)) {
+        throw new ParseError(
+          `Expected argument expression after ',', got ')'`,
+          this._currentToken.location,
+        );
+      }
+      if (this._currTokenIs(TokenType.EOF)) {
+        throw new ParseError("Unclosed argument list: expected ')'", this._currentToken.location);
+      }
+      if (this._currTokenIs(TokenType.COMMA)) {
+        throw new ParseError(`Expected argument expression, got ','`, this._currentToken.location);
+      }
+
+      args.push(this._parseExpression(this._lowPrecedence));
+    }
+
+    if (!this._expectPeek(TokenType.RPAREN)) {
+      throw new ParseError("Unclosed argument list: expected ')'", this._peekToken.location);
+    }
+
+    return new CallExpression(token, ident, args);
+  }
+
+  private _parseInfixExpression(left: Expression): Expression {
+    __DEV__ &&
+      assert.ok(
+        [
+          TokenType.PLUS,
+          TokenType.MINUS,
+          TokenType.MULTIPLY,
+          TokenType.DIVIDE,
+          TokenType.LT,
+          TokenType.GT,
+          TokenType.LTE,
+          TokenType.GTE,
+          TokenType.EQ,
+          TokenType.NEQ,
+        ].includes(this._currentToken.type as TokenType),
+        `_parseInfixExpression called with non-operator token: ${toDebugToken(this._currentToken)}`,
+      );
+
+    const token = this._currentToken;
+    const precedence = this._getPrecedence(token);
+
+    this._nextToken();
+
+    const right = this._parseExpression(precedence);
+
+    return new InfixExpression(token, left, right);
+  }
+
+  private _getPrecedence(token: Token): number {
+    switch (token.type) {
+      case TokenType.LBRACKET:
+      case TokenType.LPAREN:
+        return 5;
+      case TokenType.MULTIPLY:
+      case TokenType.DIVIDE:
+        return 4;
+      case TokenType.MINUS:
+      case TokenType.PLUS:
+        return 3;
+      case TokenType.LT:
+      case TokenType.GT:
+      case TokenType.LTE:
+      case TokenType.GTE:
+        return 2;
+      case TokenType.EQ:
+      case TokenType.NEQ:
+        return 1;
+      default:
+        return this._lowPrecedence;
+    }
+  }
+
+  private _currTokenIs(t: TokenType): boolean {
+    return this._currentToken.type === t;
+  }
+
+  private _peekTokenIs(t: TokenType): boolean {
+    return this._peekToken.type === t;
+  }
+
+  private _expectPeekArrayToken(): boolean {
+    return (
+      this._expectPeek(TokenType.IDENT) ||
+      this._expectPeek(TokenType.STRING) ||
+      this._expectPeek(TokenType.NUMBER) ||
+      this._expectPeek(TokenType.TRUE) ||
+      this._expectPeek(TokenType.FALSE) ||
+      this._expectPeek(TokenType.NULL) ||
+      this._expectPeek(TokenType.LBRACKET)
+    );
+  }
+
+  private _expectPeek(t: TokenType): boolean {
+    if (this._peekTokenIs(t)) {
+      this._nextToken();
+      return true;
+    } else {
+      return false;
+    }
+  }
+}

@@ -1,0 +1,23 @@
+// Built-in Functions
+
+// type() returns the type of a value
+print("Type of 42:", type(42));
+print("Type of 'hello':", type("hello"));
+
+// len() returns length of string or array
+let s = "String";
+let arr = [1, 2, 3];
+print("Length of string:", len(s));
+print("Length of array:", len(arr));
+
+// push() appends values to arrays or strings
+push(arr, 4);
+print("Array after push:", arr);
+
+let greeting = "Hello";
+push(greeting, "!"); // Returns new length, greeting becomes "Hello!"
+print("String after push:", greeting);
+
+// num() converts values to numbers
+let n = num("100");
+print("String to number:", n + 5);
