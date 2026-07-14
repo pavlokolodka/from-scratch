@@ -1,0 +1,29 @@
+// Control Flow: Conditionals and loops
+
+let x = 15;
+
+// If-elif-else structure
+if (x > 20) {
+    print("x is large");
+} elif (x > 10) {
+    print("x is medium"); // This block will execute
+} else {
+    print("x is small");
+}
+
+// While loop
+let i = 0;
+while (i < 5) {
+    print("Loop iteration:", i);
+    i = i + 1;
+}
+
+// Using 'stop' to exit a loop early
+let count = 0;
+while (true) {
+    count = count + 1;
+    if (count == 3) {
+        print("Stopping at 3");
+        stop;
+    }
+}

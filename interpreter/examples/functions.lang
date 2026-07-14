@@ -1,0 +1,24 @@
+// Functions 
+
+// Basic function declaration
+fn greet(name) {
+    print("Hello,", name, "!");
+}
+
+greet("World");
+
+// Function with return value
+fn add(a, b) {
+    return a + b;
+}
+
+let sum = add(10, 20);
+print("10 + 20 =", sum);
+
+// Recursive function
+fn factorial(n) {
+    if (n <= 1) { return 1; }
+    return n * factorial(n - 1);
+}
+
+print("Factorial of 5:", factorial(5));

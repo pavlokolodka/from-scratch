@@ -1,0 +1,17 @@
+// Data Structures: Arrays and indexing
+
+// Arrays are ordered collections
+let fruits = ["apple", "banana", "cherry"];
+print("Fruits array:", fruits);
+
+// Access elements by zero-based index
+print("First fruit:", fruits[0]);
+print("Second fruit:", fruits[1]);
+
+// Arrays are mutable
+fruits[1] = "blueberry";
+print("Updated fruits:", fruits);
+
+// Arrays can contain mixed types
+let mixed = [1, "two", true, nil];
+print("Mixed array:", mixed);

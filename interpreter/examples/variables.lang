@@ -1,0 +1,14 @@
+// Variable and constant declarations
+
+// 'let' is used for mutable variables
+let count = 1;
+print("Initial count:", count);
+
+count = count + 5; // Re-assignment is valid
+print("Updated count:", count);
+
+// 'const' is used for immutable constants
+const i = 3;
+print("Value of i:", i);
+
+i = 4; // This would trigger a Runtime error
